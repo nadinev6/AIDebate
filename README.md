@@ -138,6 +138,29 @@ python agents/debate_agent.py
 - `DELETE /api/voice/session/{session_id}` - End a voice session
 - `GET /api/voice/sessions` - List active voice sessions
 
+### Performance Analytics
+
+**Real-time Metrics Logging:**
+- API response times automatically logged to `backend/performance_logs.jsonl`
+- Confidence scores tracked for all AI responses
+- Success/failure rates monitored
+- JSONL format for easy parsing and analysis
+
+**View Performance Data:**
+```bash
+# Get recent performance metrics via API
+curl http://localhost:8000/api/performance/metrics
+
+# Or view raw log file
+cat backend/performance_logs.jsonl
+```
+
+**Metrics Include:**
+- Response time (seconds)
+- Confidence score (0.0-1.0)
+- Message length
+- Success/failure status
+- Timestamp and error details
 
 - `GET /api/debate/history` - Debate session history
 

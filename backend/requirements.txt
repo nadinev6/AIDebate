@@ -1,0 +1,22 @@
+# AI Debate Partner - Backend Dependencies
+# Sprint 1: Core FastAPI setup and real-time capabilities
+
+# Real-time AI and voice processing
+livekit-agents[assemblyai,openai]
+
+# Web framework and server
+fastapi
+uvicorn
+
+# Configuration and environment
+python-dotenv
+pydantic-settings
+
+# AI and knowledge base (Sprint 2+)
+langchain
+faiss-cpu
+sentence-transformers
+
+# Additional utilities
+requests
+python-multipart

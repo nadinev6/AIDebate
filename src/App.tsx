@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Download, Send, Wifi, WifiOff, MessageSquare, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Wifi, WifiOff, MessageSquare, Sparkles, Download, Mic, MicOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChatInput, TypingDots, ActionButton } from '@/components/ui/chat-input';
+import { AIVoiceInput } from '@/components/ui/ai-voice-input';
 
 interface Message {
   id: string;
@@ -36,10 +36,12 @@ function App() {
   const [isTyping, setIsTyping] = useState(false);
   const [voiceSession, setVoiceSession] = useState<VoiceSession | null>(null);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [inputFocused, setInputFocused] = useState(false);
 
   // Refs for DOM access
   const chatHistoryRef = useRef<HTMLDivElement>(null);
-  const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
   // API configuration
   const apiBaseUrl = 'http://localhost:8000';
@@ -53,6 +55,18 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  // Mouse tracking for glow effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const checkServerConnection = async () => {
     try {
@@ -138,33 +152,6 @@ function App() {
       setIsTyping(false);
       addMessage('Sorry, I encountered an error. Please try again.', 'ai');
     }
-
-    // Focus back on input
-    if (messageInputRef.current) {
-      messageInputRef.current.focus();
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.ctrlKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessageInput(e.target.value);
-    // Auto-resize textarea
-    e.target.style.height = 'auto';
-    e.target.style.height = e.target.scrollHeight + 'px';
-  };
-
-  const toggleVoiceSession = async () => {
-    if (isVoiceActive) {
-      await endVoiceSession();
-    } else {
-      await startVoiceSession();
-    }
   };
 
   const startVoiceSession = async () => {
@@ -236,6 +223,15 @@ function App() {
     }
   };
 
+  const handleAttachFile = () => {
+    const mockFileName = `transcript-${Math.floor(Math.random() * 1000)}.txt`;
+    setAttachments(prev => [...prev, mockFileName]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const exportTranscript = () => {
     if (messages.length === 0) {
       alert('No conversation to export!');
@@ -276,200 +272,257 @@ function App() {
   };
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground">
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <div className="dark min-h-screen bg-transparent text-white relative overflow-hidden">
+      {/* Atmospheric background effects */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse delay-700" />
+        <div className="absolute top-1/4 right-1/3 w-64 h-64 bg-fuchsia-500/10 rounded-full mix-blend-normal filter blur-[96px] animate-pulse delay-1000" />
+      </div>
+
+      <div className="container mx-auto px-4 py-6 max-w-4xl relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 rounded-full bg-primary/10 glow-primary">
-              <MessageSquare className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              AI Debate Partner
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="inline-block mb-4"
+          >
+            <h1 className="text-4xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/40 pb-1">
+              How can I challenge your thinking today?
             </h1>
-            <div className="p-3 rounded-full bg-accent/10 glow-accent">
-              <Sparkles className="w-8 h-8 text-accent" />
-            </div>
-          </div>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Your Real-Time AI Opponent for Philosophical Arguments
-          </p>
-        </div>
+            <motion.div 
+              className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: "100%", opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+            />
+          </motion.div>
+          <motion.p 
+            className="text-sm text-white/40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            Present your argument and engage with philosophical counter-arguments
+          </motion.p>
+        </motion.div>
 
         {/* Connection Status */}
-        <Card className="mb-6 border-border/50 bg-card/50 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              {isConnected ? (
-                <Wifi className="w-5 h-5 text-primary" />
-              ) : (
-                <WifiOff className="w-5 h-5 text-destructive" />
-              )}
-              <span className={`font-medium ${isConnected ? 'text-primary' : 'text-destructive'}`}>
-                {connectionStatus}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div 
+          className="mb-6 backdrop-blur-2xl bg-white/[0.02] rounded-lg border border-white/[0.05] p-4"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="flex items-center gap-3">
+            {isConnected ? (
+              <Wifi className="w-5 h-5 text-violet-400" />
+            ) : (
+              <WifiOff className="w-5 h-5 text-red-400" />
+            )}
+            <span className={`font-medium ${isConnected ? 'text-violet-400' : 'text-red-400'}`}>
+              {connectionStatus}
+            </span>
+          </div>
+        </motion.div>
 
-        {/* Main Debate Interface */}
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Debate Arena</CardTitle>
-            <CardDescription className="text-center">
-              Present your argument and engage with philosophical counter-arguments
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            {/* Chat History */}
-            <div 
-              ref={chatHistoryRef}
-              className="h-96 overflow-y-auto space-y-4 p-4 rounded-lg bg-muted/20 border border-border/30"
-            >
-              {messages.length === 0 ? (
-                <div className="text-center py-12 space-y-4">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center glow-primary">
-                    <MessageSquare className="w-8 h-8 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-primary mb-2">Welcome to the AI Debate Arena!</h3>
-                    <p className="text-muted-foreground mb-1">Make a claim, and I'll challenge it with philosophical counter-arguments.</p>
-                    <p className="text-sm text-accent font-medium">Ready to debate: Voice and text input available!</p>
-                  </div>
+        {/* Voice Input Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8"
+        >
+          <AIVoiceInput
+            onStart={startVoiceSession}
+            onStop={endVoiceSession}
+            demoMode={false}
+            className="backdrop-blur-2xl bg-white/[0.02] rounded-2xl border border-white/[0.05] py-8"
+          />
+        </motion.div>
+
+        {/* Chat History */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8"
+        >
+          <div 
+            ref={chatHistoryRef}
+            className="h-96 overflow-y-auto space-y-4 p-6 rounded-2xl backdrop-blur-2xl bg-white/[0.02] border border-white/[0.05]"
+          >
+            {messages.length === 0 ? (
+              <div className="text-center py-12 space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-full bg-violet-500/10 flex items-center justify-center">
+                  <MessageSquare className="w-8 h-8 text-violet-400" />
                 </div>
-              ) : (
-                messages.map((message) => (
-                  <div key={message.id} className={`message-enter flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-lg p-4 ${
-                      message.sender === 'user' 
-                        ? 'bg-primary text-primary-foreground glow-primary' 
-                        : 'bg-secondary text-secondary-foreground border border-border/50'
-                    }`}>
-                      <div className="mb-2">{message.content}</div>
-                      <div className="text-xs opacity-70 flex items-center gap-2">
-                        <span>{message.sender === 'user' ? 'You' : 'AI Opponent'}</span>
-                        <span>•</span>
-                        <span>{formatTime(message.timestamp)}</span>
-                        {message.metadata?.confidence && (
-                          <>
-                            <span>•</span>
-                            <span>Confidence: {(message.metadata.confidence * 100).toFixed(0)}%</span>
-                          </>
-                        )}
-                      </div>
-                      {message.sender === 'ai' && message.metadata?.sources && message.metadata.sources.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-border/30">
-                          <details className="text-sm">
-                            <summary className="cursor-pointer text-accent font-medium hover:text-accent/80">
-                              📚 Philosophical Sources ({message.metadata.sources.length})
-                            </summary>
-                            <ul className="mt-2 space-y-1 text-muted-foreground">
-                              {message.metadata.sources.map((source, index) => (
-                                <li key={index} className="text-xs">• {source}</li>
-                              ))}
-                            </ul>
-                          </details>
-                        </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-white/90 mb-2">Ready for Philosophical Debate</h3>
+                  <p className="text-white/60 mb-1">Present your argument, and I'll challenge it with reasoned counter-arguments.</p>
+                  <p className="text-sm text-violet-400 font-medium">Voice and text input available</p>
+                </div>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <motion.div 
+                  key={message.id} 
+                  className={`message-enter flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className={`max-w-[80%] rounded-2xl p-4 ${
+                    message.sender === 'user' 
+                      ? 'bg-white text-black' 
+                      : 'bg-white/[0.05] text-white/90 border border-white/[0.1]'
+                  }`}>
+                    <div className="mb-2">{message.content}</div>
+                    <div className="text-xs opacity-70 flex items-center gap-2">
+                      <span>{message.sender === 'user' ? 'You' : 'AI Philosopher'}</span>
+                      <span>•</span>
+                      <span>{formatTime(message.timestamp)}</span>
+                      {message.metadata?.confidence && (
+                        <>
+                          <span>•</span>
+                          <span>Confidence: {(message.metadata.confidence * 100).toFixed(0)}%</span>
+                        </>
                       )}
                     </div>
-                  </div>
-                ))
-              )}
-              
-              {/* Typing Indicator */}
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-secondary text-secondary-foreground rounded-lg p-4 border border-border/50">
-                    <div className="flex items-center gap-3">
-                      <div className="typing-dots">
-                        <div className="typing-dot"></div>
-                        <div className="typing-dot"></div>
-                        <div className="typing-dot"></div>
+                    {message.sender === 'ai' && message.metadata?.sources && message.metadata.sources.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-white/[0.1]">
+                        <details className="text-sm">
+                          <summary className="cursor-pointer text-violet-400 font-medium hover:text-violet-300">
+                            📚 Philosophical Sources ({message.metadata.sources.length})
+                          </summary>
+                          <ul className="mt-2 space-y-1 text-white/60">
+                            {message.metadata.sources.map((source, index) => (
+                              <li key={index} className="text-xs">• {source}</li>
+                            ))}
+                          </ul>
+                        </details>
                       </div>
-                      <span className="text-sm text-muted-foreground">AI is thinking...</span>
-                    </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))
+            )}
+            
+            {/* Typing Indicator */}
+            {isTyping && (
+              <motion.div 
+                className="flex justify-start"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="bg-white/[0.05] text-white/90 rounded-2xl p-4 border border-white/[0.1]">
+                  <div className="flex items-center gap-3">
+                    <TypingDots />
+                    <span className="text-sm text-white/60">AI is thinking...</span>
                   </div>
                 </div>
-              )}
-            </div>
+              </motion.div>
+            )}
+          </div>
+        </motion.div>
 
-            {/* Input Controls */}
-            <div className="space-y-4">
-              <Textarea
-                ref={messageInputRef}
-                value={messageInput}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your argument here... (e.g., 'The death penalty is morally justified')"
-                className="min-h-[100px] bg-background/50 border-border/50 focus:border-primary/50 focus:ring-primary/20"
-              />
-              
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={sendMessage}
-                  disabled={!messageInput.trim() || !isConnected}
-                  className="flex-1 min-w-[200px] glow-primary"
-                  size="lg"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Argument
-                </Button>
-                
-                <Button
-                  onClick={toggleVoiceSession}
-                  variant={isVoiceActive ? "destructive" : "voice"}
-                  size="lg"
-                  className={isVoiceActive ? "animate-pulse-glow" : ""}
-                >
-                  {isVoiceActive ? <MicOff className="w-4 h-4 mr-2" /> : <Mic className="w-4 h-4 mr-2" />}
-                  {isVoiceActive ? 'End Voice Session' : 'Start Voice Debate'}
-                </Button>
-                
-                <Button
-                  onClick={exportTranscript}
-                  disabled={messages.length === 0}
-                  variant="outline"
-                  size="lg"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Transcript
-                </Button>
-              </div>
-            </div>
+        {/* Chat Input */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-8"
+        >
+          <ChatInput
+            value={messageInput}
+            onChange={setMessageInput}
+            onSend={sendMessage}
+            onAttachFile={handleAttachFile}
+            attachments={attachments}
+            onRemoveAttachment={removeAttachment}
+            isTyping={isTyping}
+            disabled={!isConnected}
+            placeholder="Present your philosophical argument..."
+          />
+        </motion.div>
 
-            {/* Features Preview */}
-            <Card className="bg-muted/10 border-border/30">
-              <CardContent className="p-4">
-                <h4 className="font-semibold text-accent mb-3">Features Available:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
-                    <span><strong>RAG-Powered Debates:</strong> ✅ AI responses backed by philosophical knowledge</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-accent"></div>
-                    <span><strong>Voice Integration:</strong> ✅ Real-time voice debate with LiveKit</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
-                    <span><strong>Text Input:</strong> ✅ Alternative text-based debate interface</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-accent"></div>
-                    <span><strong>Export Transcript:</strong> ✅ Download complete conversation history</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </CardContent>
-        </Card>
+        {/* Action Buttons */}
+        <motion.div 
+          className="flex flex-wrap items-center justify-center gap-4 mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <ActionButton
+            icon={<Download className="w-4 h-4" />}
+            label="Export Transcript"
+            onClick={exportTranscript}
+          />
+          <ActionButton
+            icon={isVoiceActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            label={isVoiceActive ? 'End Voice Session' : 'Start Voice Debate'}
+            onClick={isVoiceActive ? endVoiceSession : startVoiceSession}
+          />
+        </motion.div>
 
         {/* Footer */}
-        <div className="text-center mt-8 text-sm text-muted-foreground">
+        <motion.div 
+          className="text-center text-sm text-white/40"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
           <p>Powered by AssemblyAI, OpenAI, and LiveKit | Built for AssemblyAI Hackathon</p>
-        </div>
+        </motion.div>
       </div>
+
+      {/* Mouse-following glow effect */}
+      <AnimatePresence>
+        {inputFocused && (
+          <motion.div 
+            className="fixed w-[50rem] h-[50rem] rounded-full pointer-events-none z-0 opacity-[0.02] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 blur-[96px]"
+            animate={{
+              x: mousePosition.x - 400,
+              y: mousePosition.y - 400,
+            }}
+            transition={{
+              type: "spring",
+              damping: 25,
+              stiffness: 150,
+              mass: 0.5,
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Typing indicator overlay */}
+      <AnimatePresence>
+        {isTyping && (
+          <motion.div 
+            className="fixed bottom-8 left-1/2 transform -translate-x-1/2 backdrop-blur-2xl bg-white/[0.02] rounded-full px-4 py-2 shadow-lg border border-white/[0.05] z-50"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-7 rounded-full bg-white/[0.05] flex items-center justify-center text-center">
+                <span className="text-xs font-medium text-white/90 mb-0.5">AI</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-white/70">
+                <span>Thinking</span>
+                <TypingDots />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

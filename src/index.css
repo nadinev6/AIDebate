@@ -1,7 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 @layer base {
   :root {
     --background: 210 40% 98%;
@@ -25,7 +24,6 @@
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.75rem;
   }
-
   .dark {
     /* Deep atmospheric colors inspired by the library image */
     --background: 10 10% 3%;
@@ -49,7 +47,6 @@
     --ring: 263 70% 50%;
   }
 }
-
 @layer base {
   * {
     @apply border-border;
@@ -58,51 +55,41 @@
     @apply bg-background text-foreground;
   }
 }
-
 /* Ripple animation for input feedback */
 @keyframes ripple {
   0% { transform: scale(0.5); opacity: 0.6; }
   100% { transform: scale(2); opacity: 0; }
 }
-
 /* Custom scrollbar for dark theme */
 .dark ::-webkit-scrollbar {
   width: 8px;
 }
-
 .dark ::-webkit-scrollbar-track {
   background: hsl(var(--muted));
 }
-
 .dark ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
   border-radius: 4px;
 }
-
 .dark ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--accent));
 }
-
 /* Atmospheric glow effects */
 .glow-primary {
   box-shadow: 0 0 20px hsla(var(--primary), 0.3);
 }
-
 .glow-accent {
   box-shadow: 0 0 15px hsla(var(--accent), 0.4);
 }
-
 /* Message animations */
 .message-enter {
   animation: fade-in 0.3s ease-out;
 }
-
 /* Typing indicator animation */
 .typing-dots {
   display: inline-flex;
   gap: 4px;
 }
-
 .typing-dot {
   width: 6px;
   height: 6px;
@@ -110,15 +97,12 @@
   background: hsl(var(--muted-foreground));
   animation: typing-pulse 1.4s infinite;
 }
-
 .typing-dot:nth-child(2) {
   animation-delay: 0.2s;
 }
-
 .typing-dot:nth-child(3) {
   animation-delay: 0.4s;
 }
-
 @keyframes typing-pulse {
   0%, 60%, 100% {
     opacity: 0.3;
@@ -129,8 +113,7 @@
     transform: scale(1);
   }
 }
-
 @keyframes fade-in {
-  0%: { opacity: 0; transform: translateY(10px); } /* Added semicolon after opacity: 0 */
-  100%: { opacity: 1; transform: translateY(0); } /* Added semicolon after opacity: 1 */
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }

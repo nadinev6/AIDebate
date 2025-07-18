@@ -4,7 +4,7 @@
 
 ![AssemblyAI Logo](https://app.assemblyai.com/favicon.ico)
 &nbsp;&nbsp;
-![OpenAI Logo](https://openai.com/favicon.ico)
+![OpenAI Logo](https://www.imghippo.com/i/avi2831Fc.png)
 &nbsp;&nbsp;
 ![LiveKit Logo](https://livekit.io/favicon.ico)
 

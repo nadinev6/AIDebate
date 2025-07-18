@@ -2,11 +2,6 @@
 
 *Your Real-Time AI Opponent for Philosophical Arguments*
 
-![AssemblyAI Logo](https://www.imghippo.com/i/RJD2010PZA.png)
-&nbsp;&nbsp;
-![OpenAI Logo](https://www.imghippo.com/i/avi2831Fc.png)
-&nbsp;&nbsp;
-![LiveKit Logo](https://livekit.io/favicon.ico)
 
 AI Debate Partner is a real-time, browser-based platform where you can argue your ideas—and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
 

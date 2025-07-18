@@ -1,16 +1,5 @@
 /* Enhanced atmospheric styling for AI Debate Partner */
 
-/* Ensure smooth transitions for all interactive elements */
-* {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Deep atmospheric background with subtle gradients */
-body {
-  background: radial-gradient(ellipse at top, hsl(var(--background)) 0%, hsl(10 10% 2%) 100%);
-  min-height: 100vh;
-}
-
 /* Enhanced scrollbar styling for webkit browsers */
 ::-webkit-scrollbar {
   width: 8px;

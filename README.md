@@ -45,7 +45,6 @@ AI Debate Partner is a real-time, browser-based platform where you can argue you
 
 ### Sprint 5: Polish and Analytics
 - [ ] Debate transcription and export
-- [ ] Performance analytics
 - [ ] User feedback integration
 - [ ] Debate session management
 - [ ] Production optimizations
@@ -139,7 +138,6 @@ python agents/debate_agent.py
 - `DELETE /api/voice/session/{session_id}` - End a voice session
 - `GET /api/voice/sessions` - List active voice sessions
 
-### Upcoming Endpoints (Sprint 4+)
 
 - `GET /api/debate/history` - Debate session history
 
@@ -161,9 +159,6 @@ python agents/debate_agent.py
 - 🔗 **LiveKit Integration**: Real-time audio streaming infrastructure
 - 🎭 **Cartesia TTS**: High-quality "Griffin" philosopher voice
 
-### Coming Soon
-- 🎤 **Voice Debate**: Real-time speech-to-text and text-to-speech
-- 📊 **Analytics**: Debate performance and learning insights
 - 📱 **Mobile App**: Native mobile experience
 
 ## 🔧 Technology Stack

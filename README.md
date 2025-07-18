@@ -2,7 +2,7 @@
 
 *Your Real-Time AI Opponent for Philosophical Arguments*
 
-![AssemblyAI Logo](https://app.assemblyai.com/favicon.ico)
+![AssemblyAI Logo](https://www.imghippo.com/i/RJD2010PZA.png)
 &nbsp;&nbsp;
 ![OpenAI Logo](https://www.imghippo.com/i/avi2831Fc.png)
 &nbsp;&nbsp;

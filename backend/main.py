@@ -10,9 +10,10 @@ from pydantic import BaseModel, Field
 import uvicorn
 import os
 import logging
+import time
+import json
 from typing import List, Dict, Any, Optional
 import uuid
-import time
 
 # RAG and AI imports
 from langchain_community.vectorstores import FAISS
@@ -57,6 +58,32 @@ embeddings = None
 llm = None
 rag_chain = None
 active_voice_sessions = {}  # Track active voice sessions
+
+# Performance logging configuration
+PERFORMANCE_LOG_FILE = "backend/performance_logs.jsonl"
+
+def log_performance_metrics(response_time: float, confidence: float, user_message: str, success: bool = True, error_message: str = None):
+    """Log performance metrics to filesystem"""
+    try:
+        log_entry = {
+            "timestamp": time.time(),
+            "datetime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            "response_time_seconds": round(response_time, 3),
+            "confidence_score": round(confidence, 3) if confidence else None,
+            "message_length": len(user_message),
+            "success": success,
+            "error": error_message
+        }
+        
+        # Ensure the backend directory exists
+        os.makedirs(os.path.dirname(PERFORMANCE_LOG_FILE), exist_ok=True)
+        
+        # Append to JSONL file (JSON Lines format for easy parsing)
+        with open(PERFORMANCE_LOG_FILE, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(log_entry) + '\n')
+            
+    except Exception as e:
+        logger.error(f"Failed to log performance metrics: {str(e)}")
 
 # Data models for API requests/responses
 class DebateMessage(BaseModel):
@@ -238,21 +265,40 @@ async def debate_with_rag(message: DebateMessage):
     """
     Enhanced debate endpoint powered by RAG
     """
+    start_time = time.time()
+    response_confidence = 0.0
+    
     try:
         logger.info(f"Received debate message: {message.content[:100]}...")
         
         if not rag_chain:
             # Fallback response if RAG is not available
             logger.warning("RAG not available, using fallback response")
-            return DebateResponse(
+            response_time = time.time() - start_time
+            response_confidence = 0.3
+            
+            # Log performance metrics for fallback
+            log_performance_metrics(
+                response_time=response_time,
+                confidence=response_confidence,
+                user_message=message.content,
+                success=False,
+                error_message="RAG not available"
+            )
+            
+            response = DebateResponse(
                 response="I understand your point, but I need my philosophical knowledge base to provide a proper counter-argument. Please ensure the system is properly configured with OpenAI API key and knowledge base.",
-                confidence=0.3,
+                confidence=response_confidence,
                 sources=["system_fallback"]
             )
+            return response
         
         # Use RAG chain to generate response
         logger.info("Generating RAG response...")
+        rag_start_time = time.time()
         response = rag_chain.invoke(message.content)
+        rag_end_time = time.time()
+        rag_response_time = rag_end_time - rag_start_time
         
         # Get retrieved documents for transparency
         retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
@@ -272,17 +318,44 @@ async def debate_with_rag(message: DebateMessage):
                     "content_preview": doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content
                 })
         
-        logger.info(f"Generated response with {len(sources)} sources")
+        # Calculate total response time and set confidence
+        total_response_time = time.time() - start_time
+        response_confidence = 0.85  # High confidence for RAG responses
         
-        return DebateResponse(
+        logger.info(f"Generated response with {len(sources)} sources")
+        logger.info(f"RAG response time: {rag_response_time:.3f}s, Total response time: {total_response_time:.3f}s")
+        
+        # Log performance metrics for successful response
+        log_performance_metrics(
+            response_time=total_response_time,
+            confidence=response_confidence,
+            user_message=message.content,
+            success=True
+        )
+        
+        debate_response = DebateResponse(
             response=response,
-            confidence=0.85,  # High confidence for RAG responses
+            confidence=response_confidence,
             sources=sources,
             retrieved_docs=doc_info
         )
+        return debate_response
         
     except Exception as e:
+        # Calculate response time for error case
+        error_response_time = time.time() - start_time
+        
         logger.error(f"Error in debate endpoint: {str(e)}")
+        
+        # Log performance metrics for error case
+        log_performance_metrics(
+            response_time=error_response_time,
+            confidence=0.0,
+            user_message=message.content,
+            success=False,
+            error_message=str(e)
+        )
+        
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Knowledge base endpoints
@@ -480,6 +553,55 @@ async def list_active_sessions():
         logger.error(f"Error listing active sessions: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Performance metrics endpoint
+@app.get("/api/performance/metrics")
+async def get_performance_metrics(limit: int = 100):
+    """
+    Get recent performance metrics from log file
+    """
+    try:
+        if not os.path.exists(PERFORMANCE_LOG_FILE):
+            return {"metrics": [], "message": "No performance data available"}
+        
+        metrics = []
+        with open(PERFORMANCE_LOG_FILE, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            # Get the last 'limit' lines
+            recent_lines = lines[-limit:] if len(lines) > limit else lines
+            
+            for line in recent_lines:
+                try:
+                    metric = json.loads(line.strip())
+                    metrics.append(metric)
+                except json.JSONDecodeError:
+                    continue
+        
+        # Calculate some basic statistics
+        if metrics:
+            successful_metrics = [m for m in metrics if m.get('success', False)]
+            avg_response_time = sum(m['response_time_seconds'] for m in successful_metrics) / len(successful_metrics) if successful_metrics else 0
+            avg_confidence = sum(m['confidence_score'] for m in successful_metrics if m['confidence_score']) / len([m for m in successful_metrics if m['confidence_score']]) if successful_metrics else 0
+            success_rate = len(successful_metrics) / len(metrics) * 100
+            
+            stats = {
+                "total_requests": len(metrics),
+                "successful_requests": len(successful_metrics),
+                "success_rate_percent": round(success_rate, 2),
+                "average_response_time_seconds": round(avg_response_time, 3),
+                "average_confidence_score": round(avg_confidence, 3)
+            }
+        else:
+            stats = {}
+        
+        return {
+            "metrics": metrics,
+            "statistics": stats,
+            "total_entries": len(metrics)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error retrieving performance metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",

@@ -53,7 +53,12 @@ function App() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    scrollToBottom();
+    // Delay scroll to allow framer-motion animation to complete
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+    }, 300); // Match the duration of the message animation
+    
+    return () => clearTimeout(timeoutId);
   }, [messages, isTyping]);
 
   // Mouse tracking for glow effect

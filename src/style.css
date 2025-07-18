@@ -1,5 +1,5 @@
 /* AI Debate Partner - Frontend Styles */
-/* Sprint 1: Modern, responsive design ready for future features */
+/* Sprint 4: Modern, responsive design for React interface */
 
 :root {
     --primary-color: #2563eb;
@@ -77,27 +77,9 @@ body {
     gap: 0.5rem;
 }
 
-.status-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: var(--warning-color);
-    animation: pulse 2s infinite;
-}
-
-.status-dot.connected {
-    background-color: var(--success-color);
-    animation: none;
-}
-
 .status-text {
     font-weight: 500;
     color: var(--text-secondary);
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
 }
 
 /* Main Content */
@@ -220,26 +202,11 @@ body {
     gap: 1rem;
 }
 
-#messageInput {
-    width: 100%;
-    padding: 1rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 1rem;
-    resize: vertical;
-    transition: border-color 0.2s;
-}
-
-#messageInput:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
 .input-controls {
     display: flex;
     gap: 1rem;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 /* Buttons */
@@ -255,6 +222,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    white-space: nowrap;
 }
 
 .btn-primary {
@@ -311,16 +279,6 @@ body {
     border-left: 4px solid var(--primary-color);
 }
 
-.voice-status {
-    background: #fef3c7;
-    border: 1px solid #f59e0b;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    color: #92400e;
-    text-align: center;
-}
-
 .features-preview h4 {
     color: var(--primary-color);
     margin-bottom: 1rem;
@@ -343,30 +301,6 @@ body {
     border-top: 1px solid var(--border);
     color: var(--text-secondary);
     font-size: 0.9rem;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .header h1 {
-        font-size: 2rem;
-    }
-    
-    .container {
-        padding: 0 1rem;
-    }
-    
-    .input-controls {
-        flex-direction: column;
-    }
-    
-    .btn {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .message {
-        max-width: 95%;
-    }
 }
 
 /* Loading and Animation States */
@@ -410,4 +344,54 @@ body {
 @keyframes typingDots {
     0%, 60%, 100% { opacity: 0.3; }
     30% { opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .input-controls {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .message {
+        max-width: 95%;
+    }
+    
+    .chat-history {
+        max-height: 400px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 1rem 0;
+    }
+    
+    .header h1 {
+        font-size: 1.75rem;
+    }
+    
+    .subtitle {
+        font-size: 1rem;
+    }
+    
+    .input-section {
+        padding: 1rem;
+    }
+    
+    .features-preview {
+        padding: 1rem;
+    }
 }

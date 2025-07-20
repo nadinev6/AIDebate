@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useTransition } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useCallback, useTransition, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
     ImageIcon,
@@ -19,7 +18,7 @@ import {
     Command,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import * as React from "react"
+import * as React from "react";
 
 interface UseAutoResizeTextareaProps {
     minHeight: number;

@@ -24,8 +24,16 @@ from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
 
 # LiveKit imports
-from livekit import AccessToken, VideoGrant
-from livekit.protocol import Room
+from livekit import agents
+from livekit.agents import AgentSession, Agent, RoomInputOptions
+from livekit.plugins import (
+    openai,
+    cartesia,
+    assemblyai,
+    noise_cancellation,
+    silero,
+)
+
 
 from config import settings
 

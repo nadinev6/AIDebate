@@ -3,6 +3,7 @@ import { Wifi, WifiOff, MessageSquare, Sparkles, Download, Mic, MicOff } from 'l
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatInput, TypingDots, ActionButton } from '@/components/ui/chat-input';
 import { AIVoiceInput } from '@/components/ui/ai-voice-input';
+import { useLiveKitAudio } from "@/hooks/useLiveKitAudio";
 
 interface Message {
   id: string;
@@ -28,11 +29,23 @@ interface VoiceSession {
 }
 
 function App() {
+  // Destructure functions from the hook inside the component
+  // This ensures they are part of the component's render cycle
+  const {
+    connectToRoom,
+    startMic,
+    stopMic,
+    disconnect,
+    isMicActive: liveKitIsMicActive, // Get current mic status from the hook
+    isLiveKitConnected, // Get LiveKit connection status from the hook
+    micError, // Get any mic errors from the hook
+  } = useLiveKitAudio();
+
   // State management
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isConnected, setIsConnected] = useState(false); // Your backend connection status
+  // const [isVoiceActive, setIsVoiceActive] = useState(false); // This will now be derived from liveKitIsMicActive + isLiveKitConnected
   const [isTyping, setIsTyping] = useState(false);
   const [voiceSession, setVoiceSession] = useState<VoiceSession | null>(null);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
@@ -53,11 +66,9 @@ function App() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    // Delay scroll to allow framer-motion animation to complete
     const timeoutId = setTimeout(() => {
       scrollToBottom();
-    }, 300); // Match the duration of the message animation
-    
+    }, 300);
     return () => clearTimeout(timeoutId);
   }, [messages, isTyping]);
 
@@ -73,11 +84,19 @@ function App() {
     };
   }, []);
 
+  // Monitor micError from LiveKit hook
+  useEffect(() => {
+    if (micError) {
+      addMessage('Microphone error: ' + micError.message, 'ai');
+    }
+  }, [micError]);
+
+
   const checkServerConnection = async () => {
     try {
       const response = await fetch(`${apiBaseUrl}/health`);
       const data = await response.json();
-      
+
       if (data.status === 'healthy') {
         setIsConnected(true);
         setConnectionStatus('Connected to server');
@@ -147,7 +166,7 @@ function App() {
       }
 
       const data = await response.json();
-      
+
       // Hide typing indicator and add AI response
       setIsTyping(false);
       addMessage(data.response, 'ai', data);
@@ -159,16 +178,27 @@ function App() {
     }
   };
 
-  const startVoiceSession = async () => {
-    try {
-      // Request microphone permission
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // Stop the test stream
+  // MODIFIED: This function now coordinates backend session AND LiveKit connection
+  const handleStartVoiceInteraction = async () => {
+    if (!isConnected) {
+      addMessage('Cannot start voice session: Server is not connected.', 'ai');
+      return;
+    }
 
-      // Generate a unique user identity
+    if (liveKitIsMicActive) {
+      addMessage('Voice session is already active.', 'ai');
+      return;
+    }
+
+    try {
+      // Step 1: Request microphone permission (handled by startMic internally, but good to ensure)
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Stop the test stream immediately
+
+      // Step 2: Generate a unique user identity
       const userIdentity = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // Start voice session with backend
+      // Step 3: Start voice session with backend to get LiveKit token
       const response = await fetch(`${apiBaseUrl}/api/voice/start-session`, {
         method: 'POST',
         headers: {
@@ -186,7 +216,14 @@ function App() {
 
       const sessionData = await response.json();
       setVoiceSession(sessionData);
-      setIsVoiceActive(true);
+
+      // Step 4: Connect to LiveKit room using token from backend
+      await connectToRoom(sessionData.livekit_url, sessionData.token, sessionData.room_name);
+
+      // Step 5: Start the microphone and publish to LiveKit
+      await startMic(); // This is the crucial line that was missing before
+
+      // setIsVoiceActive(true); // No longer needed, derived from LiveKit hook
 
       addMessage(
         `Voice session started! Room: ${sessionData.room_name}. The AI philosopher is ready to debate.`,
@@ -199,13 +236,26 @@ function App() {
         `Failed to start voice session: ${error.message}. Please check your microphone permissions and try again.`,
         'ai'
       );
+      // Ensure we clean up if an error occurs during start-up
+      if (liveKitIsMicActive) stopMic();
+      if (isLiveKitConnected) disconnect();
+      setVoiceSession(null);
     }
   };
 
-  const endVoiceSession = async () => {
+  // MODIFIED: This function now coordinates LiveKit disconnection and backend session end
+  const handleStopVoiceInteraction = async () => {
+    if (!liveKitIsMicActive && !isLiveKitConnected) {
+      addMessage('No active voice session to end.', 'ai');
+      return;
+    }
     try {
+      // Step 1: Stop microphone and disconnect from LiveKit
+      stopMic(); // Stop publishing audio
+      disconnect(); // Disconnect from the room
+
+      // Step 2: End session with backend
       if (voiceSession) {
-        // End session with backend
         const response = await fetch(
           `${apiBaseUrl}/api/voice/session/${voiceSession.session_id}`,
           {
@@ -218,7 +268,7 @@ function App() {
         }
       }
 
-      setIsVoiceActive(false);
+      // setIsVoiceActive(false); // No longer needed
       setVoiceSession(null);
       addMessage('Voice session ended.', 'ai');
 
@@ -227,6 +277,7 @@ function App() {
       addMessage(`Error ending voice session: ${error.message}`, 'ai');
     }
   };
+
 
   const handleAttachFile = () => {
     const mockFileName = `transcript-${Math.floor(Math.random() * 1000)}.txt`;
@@ -243,28 +294,24 @@ function App() {
       return;
     }
 
-    // Format the conversation
     const transcript = messages.map(message => {
       const timestamp = formatTime(message.timestamp);
       const speaker = message.sender === 'user' ? 'You' : 'AI Opponent';
       let content = `[${timestamp}] ${speaker}: ${message.content}`;
-      
-      // Add metadata if available
+
       if (message.metadata?.sources && message.metadata.sources.length > 0) {
-        content += `\n  Sources: ${message.metadata.sources.join(', ')}`;
+        content += `\n   Sources: ${message.metadata.sources.join(', ')}`;
       }
       if (message.metadata?.confidence) {
-        content += `\n  Confidence: ${(message.metadata.confidence * 100).toFixed(0)}%`;
+        content += `\n   Confidence: ${(message.metadata.confidence * 100).toFixed(0)}%`;
       }
-      
+
       return content;
     }).join('\n\n');
 
-    // Add header
     const header = `AI Debate Partner - Conversation Transcript\nExported: ${new Date().toLocaleString()}\n${'='.repeat(50)}\n\n`;
     const fullTranscript = header + transcript;
 
-    // Create and download file
     const blob = new Blob([fullTranscript], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -278,7 +325,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      {/* Atmospheric background effects */}
+      {/* Theme Toggle is commented out */}
+
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse delay-700" />
@@ -287,7 +335,7 @@ function App() {
 
       <div className="container mx-auto px-4 py-6 max-w-4xl relative z-10">
         {/* Header */}
-        <motion.div 
+        <motion.div
           className="text-center mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -302,14 +350,14 @@ function App() {
             <h1 className="text-4xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white/90 to-white/40 pb-1">
               How can I challenge your thinking today?
             </h1>
-            <motion.div 
+            <motion.div
               className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: "100%", opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.8 }}
             />
           </motion.div>
-          <motion.p 
+          <motion.p
             className="text-sm text-white/40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -320,20 +368,20 @@ function App() {
         </motion.div>
 
         {/* Connection Status */}
-        <motion.div 
+        <motion.div
           className="mb-6 backdrop-blur-2xl bg-white/[0.02] rounded-lg border border-white/[0.05] p-4"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center gap-3">
-            {isConnected ? (
+            {isConnected && isLiveKitConnected ? ( // Consider overall connectivity
               <Wifi className="w-5 h-5 text-violet-400" />
             ) : (
               <WifiOff className="w-5 h-5 text-red-400" />
             )}
-            <span className={`font-medium ${isConnected ? 'text-violet-400' : 'text-red-400'}`}>
-              {connectionStatus}
+            <span className={`font-medium ${isConnected && isLiveKitConnected ? 'text-violet-400' : 'text-red-400'}`}>
+              {connectionStatus} {isLiveKitConnected ? ' & LiveKit Connected' : ' & LiveKit Disconnected'}
             </span>
           </div>
         </motion.div>
@@ -345,22 +393,31 @@ function App() {
           transition={{ delay: 0.2 }}
           className="mb-8"
         >
+          {/*
+            Pass LiveKit-specific functions and state to AIVoiceInput.
+            AIVoiceInput should use `startMic` when it needs to begin recording
+            and `stopMic` when it needs to stop.
+            The `onStart` and `onStop` props on AIVoiceInput will now trigger
+            our combined voice interaction functions.
+          */}
           <AIVoiceInput
-            onStart={startVoiceSession}
-            onStop={endVoiceSession}
+            onStart={handleStartVoiceInteraction} // This will now handle both backend session and LiveKit mic start
+            onStop={handleStopVoiceInteraction}   // This will now handle both LiveKit mic stop and backend session end
+            isMicActive={liveKitIsMicActive}      // Pass LiveKit's mic status
+            isConnecting={isLiveKitConnected === false && liveKitIsMicActive === false && voiceSession !== null} // Adjust logic if needed
             demoMode={false}
             className="backdrop-blur-2xl bg-white/[0.02] rounded-2xl border border-white/[0.05] py-8"
           />
         </motion.div>
 
-        {/* Chat History */}
+        {/* Chat History (rest of this section remains unchanged) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="mb-8"
         >
-          <div 
+          <div
             ref={chatHistoryRef}
             className="h-96 overflow-y-auto space-y-4 p-6 rounded-2xl backdrop-blur-2xl bg-white/[0.02] border border-white/[0.05]"
           >
@@ -377,16 +434,16 @@ function App() {
               </div>
             ) : (
               messages.map((message) => (
-                <motion.div 
-                  key={message.id} 
+                <motion.div
+                  key={message.id}
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
                   <div className={`max-w-[80%] rounded-2xl p-4 ${
-                    message.sender === 'user' 
-                      ? 'bg-white text-black' 
+                    message.sender === 'user'
+                      ? 'bg-white text-black'
                       : 'bg-white/[0.05] text-white/90 border border-white/[0.1]'
                   }`}>
                     <div className="mb-2">{message.content}</div>
@@ -419,10 +476,10 @@ function App() {
                 </motion.div>
               ))
             )}
-            
+
             {/* Typing Indicator */}
             {isTyping && (
-              <motion.div 
+              <motion.div
                 className="flex justify-start"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -459,7 +516,7 @@ function App() {
         </motion.div>
 
         {/* Action Buttons */}
-        <motion.div 
+        <motion.div
           className="flex flex-wrap items-center justify-center gap-4 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -471,14 +528,15 @@ function App() {
             onClick={exportTranscript}
           />
           <ActionButton
-            icon={isVoiceActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-            label={isVoiceActive ? 'End Voice Session' : 'Start Voice Debate'}
-            onClick={isVoiceActive ? endVoiceSession : startVoiceSession}
+            // Use liveKitIsMicActive for the button's state
+            icon={liveKitIsMicActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            label={liveKitIsMicActive ? 'End Voice Session' : 'Start Voice Debate'}
+            onClick={liveKitIsMicActive ? handleStopVoiceInteraction : handleStartVoiceInteraction}
           />
         </motion.div>
 
         {/* Footer */}
-        <motion.div 
+        <motion.div
           className="text-center text-sm text-white/40"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -488,10 +546,10 @@ function App() {
         </motion.div>
       </div>
 
-      {/* Mouse-following glow effect */}
+      {/* Mouse-following glow effect and Typing indicator overlay remain unchanged */}
       <AnimatePresence>
         {inputFocused && (
-          <motion.div 
+          <motion.div
             className="fixed w-[50rem] h-[50rem] rounded-full pointer-events-none z-0 opacity-[0.02] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 blur-[96px]"
             animate={{
               x: mousePosition.x - 400,
@@ -507,10 +565,9 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* Typing indicator overlay */}
       <AnimatePresence>
         {isTyping && (
-          <motion.div 
+          <motion.div
             className="fixed bottom-8 left-1/2 transform -translate-x-1/2 backdrop-blur-2xl bg-white/[0.02] rounded-full px-4 py-2 shadow-lg border border-white/[0.05] z-50"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

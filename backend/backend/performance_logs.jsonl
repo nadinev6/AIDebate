@@ -1,0 +1,5 @@
+{"timestamp": 1752947824.0773387, "datetime": "2025-07-19 19:57:04", "response_time_seconds": 0.001, "confidence_score": 0.3, "message_length": 40, "success": false, "error": "RAG not available"}
+{"timestamp": 1752947828.1805375, "datetime": "2025-07-19 19:57:08", "response_time_seconds": 0.001, "confidence_score": 0.3, "message_length": 40, "success": false, "error": "RAG not available"}
+{"timestamp": 1752947844.044713, "datetime": "2025-07-19 19:57:24", "response_time_seconds": 0.179, "confidence_score": 0.3, "message_length": 40, "success": false, "error": "RAG not available"}
+{"timestamp": 1752947879.2554963, "datetime": "2025-07-19 19:57:59", "response_time_seconds": 0.0, "confidence_score": 0.3, "message_length": 40, "success": false, "error": "RAG not available"}
+{"timestamp": 1752947880.7907858, "datetime": "2025-07-19 19:58:00", "response_time_seconds": 0.069, "confidence_score": 0.3, "message_length": 40, "success": false, "error": "RAG not available"}

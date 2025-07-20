@@ -45,10 +45,11 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
 
+# Global settings instance
+settings = Settings()
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO if settings.DEBUG else logging.WARNING,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-# Global settings instance
-settings = Settings()

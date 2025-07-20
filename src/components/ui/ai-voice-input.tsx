@@ -4,6 +4,7 @@ import { Mic } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
+
 interface AIVoiceInputProps {
   onStart?: () => void;
   onStop?: (duration: number) => void;

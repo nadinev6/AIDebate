@@ -40,10 +40,14 @@ class Settings(BaseSettings):
     # Voice Session Configuration (Sprint 3+)
     VOICE_SESSION_TIMEOUT: int = 3600  # 1 hour in seconds
     MAX_CONCURRENT_SESSIONS: int = 10
+
+     # Added Cartesia:
+    CARTESIA_API: str
     
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "forbid"
 
 # Global settings instance
 settings = Settings()

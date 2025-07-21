@@ -12,6 +12,10 @@ interface AIVoiceInputProps {
   demoMode?: boolean;
   demoInterval?: number;
   className?: string;
+  // Added prop to receive mic active status from App.tsx (which gets it from useLiveKitAudio)
+  isMicActive: boolean;
+  // Added prop to indicate if connection is in progress
+  isConnecting: boolean;
 }
 
 export function AIVoiceInput({
@@ -20,8 +24,16 @@ export function AIVoiceInput({
   visualizerBars = 48,
   demoMode = false,
   demoInterval = 3000,
-  className
+  className,
+  isMicActive, // Destructure the new prop
+  isConnecting, // Destructure the new prop
 }: AIVoiceInputProps) {
+  // `submitted` state here seems to control the internal UI state (listening/not listening)
+  // and also triggers `onStart`/`onStop`.
+  // It's currently redundant with `isMicActive` passed from `App.tsx`.
+  // It would be better to directly use `isMicActive` to control the UI and trigger `onStop`
+  // when `isMicActive` becomes false (meaning the mic was stopped externally).
+  // The `submitted` state could be removed or renamed to something like `isListeningUI`.
   const [submitted, setSubmitted] = useState(false);
   const [time, setTime] = useState(0);
   const [isClient, setIsClient] = useState(false);
@@ -31,22 +43,33 @@ export function AIVoiceInput({
     setIsClient(true);
   }, []);
 
+  // This useEffect currently triggers on `submitted` and `time` changes.
+  // If `submitted` is to be controlled by `isMicActive` from props, this logic needs adjustment.
+  // For example, if `isMicActive` becomes true, `onStart` should be called.
+  // If `isMicActive` becomes false, `onStop` should be called.
+  // The `time` state should only update if `isMicActive` is true.
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
+    // This condition should likely be `if (isMicActive)` instead of `if (submitted)`
+    // to truly reflect the external state of the microphone.
     if (submitted) {
       onStart?.();
       intervalId = setInterval(() => {
         setTime((t) => t + 1);
       }, 1000);
     } else {
+      // This `onStop` call will be triggered every time `submitted` becomes false,
+      // which might happen if the user clicks the button to stop, or if `isMicActive`
+      // changes externally. Ensure this doesn't cause unintended side effects.
       onStop?.(time);
       setTime(0);
     }
 
     return () => clearInterval(intervalId);
-  }, [submitted, time, onStart, onStop]);
+  }, [submitted, time, onStart, onStop]); // Dependencies should include `isMicActive` if it drives `submitted`
 
+  // This demo mode logic is fine for its intended purpose.
   useEffect(() => {
     if (!isDemo) return;
 
@@ -77,6 +100,10 @@ export function AIVoiceInput({
       setIsDemo(false);
       setSubmitted(false);
     } else {
+      // This is where the internal `submitted` state is toggled.
+      // Instead of toggling `submitted`, this should call `onStart` or `onStop` directly.
+      // The `isMicActive` prop from `App.tsx` should then update, and the `useEffect` above
+      // should react to `isMicActive` to update the UI and call `onStart`/`onStop`.
       setSubmitted((prev) => !prev);
     }
   };
@@ -87,14 +114,26 @@ export function AIVoiceInput({
         <button
           className={cn(
             "group w-16 h-16 rounded-xl flex items-center justify-center transition-colors",
-            submitted
-              ? "bg-none"
+            // Use `isMicActive` prop here for UI state.
+            // Also consider `isConnecting` for a "connecting" visual state.
+            isMicActive || isConnecting
+              ? "bg-none" // Or a specific connecting style
               : "bg-none hover:bg-black/10 dark:hover:bg-white/10"
           )}
           type="button"
           onClick={handleClick}
+          // Disable button while connecting to prevent multiple clicks
+          disabled={isConnecting}
         >
-          {submitted ? (
+          {/* Use `isConnecting` for a loading spinner, then `isMicActive` for active state */}
+          {isConnecting ? (
+            <div
+              className="w-6 h-6 rounded-sm animate-spin bg-black dark:bg-white cursor-pointer pointer-events-auto"
+              style={{ animationDuration: "1s" }} // Faster spin for connecting
+            />
+          ) : isMicActive ? (
+            // This spinner should probably be a "recording" indicator, not a "loading" spinner.
+            // A pulsating mic icon or a different animation might be more appropriate.
             <div
               className="w-6 h-6 rounded-sm animate-spin bg-black dark:bg-white cursor-pointer pointer-events-auto"
               style={{ animationDuration: "3s" }}
@@ -107,7 +146,8 @@ export function AIVoiceInput({
         <span
           className={cn(
             "font-mono text-sm transition-opacity duration-300",
-            submitted
+            // Use `isMicActive` here
+            isMicActive
               ? "text-black/70 dark:text-white/70"
               : "text-black/30 dark:text-white/30"
           )}
@@ -121,12 +161,14 @@ export function AIVoiceInput({
               key={i}
               className={cn(
                 "w-0.5 rounded-full transition-all duration-300",
-                submitted
+                // Use `isMicActive` here
+                isMicActive
                   ? "bg-black/50 dark:bg-white/50 animate-pulse"
                   : "bg-black/10 dark:bg-white/10 h-1"
               )}
               style={
-                submitted && isClient
+                // Use `isMicActive` here
+                isMicActive && isClient
                   ? {
                       height: `${20 + Math.random() * 80}%`,
                       animationDelay: `${i * 0.05}s`,
@@ -138,7 +180,8 @@ export function AIVoiceInput({
         </div>
 
         <p className="h-4 text-xs text-black/70 dark:text-white/70">
-          {submitted ? "Listening..." : "Click to speak"}
+          {/* Update text based on `isConnecting` and `isMicActive` */}
+          {isConnecting ? "Connecting..." : isMicActive ? "Listening..." : "Click to speak"}
         </p>
       </div>
     </div>

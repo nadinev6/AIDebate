@@ -36,6 +36,8 @@ function App() {
     startMic,
     stopMic,
     disconnect,
+    // It's good practice to explicitly destructure all used values from the hook
+    // even if some are not directly used in the component's render, but rather in effects or handlers.
     isMicActive: liveKitIsMicActive, // Get current mic status from the hook
     isLiveKitConnected, // Get LiveKit connection status from the hook
     micError, // Get any mic errors from the hook
@@ -57,7 +59,7 @@ function App() {
   const chatHistoryRef = useRef<HTMLDivElement>(null);
 
   // API configuration
-  const apiBaseUrl = 'http://localhost:8000';
+  const apiBaseUrl = 'http://localhost:8000'; // DO NOT CHANGE: User constraint
 
   // Check server connection on component mount
   useEffect(() => {
@@ -87,6 +89,8 @@ function App() {
   // Monitor micError from LiveKit hook
   useEffect(() => {
     if (micError) {
+      // Consider adding a more prominent error display for mic errors,
+      // as they directly impact the voice functionality.
       addMessage('Microphone error: ' + micError.message, 'ai');
     }
   }, [micError]);
@@ -185,6 +189,7 @@ function App() {
       return;
     }
 
+    // This check is good to prevent redundant calls.
     if (liveKitIsMicActive) {
       addMessage('Voice session is already active.', 'ai');
       return;
@@ -192,6 +197,9 @@ function App() {
 
     try {
       // Step 1: Request microphone permission (handled by startMic internally, but good to ensure)
+      // This `getUserMedia` call is redundant if `startMic` in `useLiveKitAudio` already handles it.
+      // If `startMic` handles it, this can be removed to avoid requesting permission twice or
+      // creating and stopping a stream unnecessarily.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(track => track.stop()); // Stop the test stream immediately
 
@@ -211,6 +219,8 @@ function App() {
       });
 
       if (!response.ok) {
+        // More specific error handling for backend response might be beneficial,
+        // e.g., checking for 429 (Too Many Requests) from the backend.
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -218,10 +228,12 @@ function App() {
       setVoiceSession(sessionData);
 
       // Step 4: Connect to LiveKit room using token from backend
+      // It's important to await this connection before attempting to start the mic.
       await connectToRoom(sessionData.livekit_url, sessionData.token, sessionData.room_name);
 
       // Step 5: Start the microphone and publish to LiveKit
-      await startMic(); // This is the crucial line that was missing before
+      // This is the crucial line that was missing before
+      await startMic(); // Ensure `startMic` handles potential errors (e.g., mic not found, permission denied) gracefully.
 
       // setIsVoiceActive(true); // No longer needed, derived from LiveKit hook
 
@@ -230,27 +242,30 @@ function App() {
         'ai'
       );
 
-    } catch (error) {
+    } catch (error: any) { // Explicitly type error as 'any' or 'unknown' and then narrow
       console.error('Error starting voice session:', error);
       addMessage(
         `Failed to start voice session: ${error.message}. Please check your microphone permissions and try again.`,
         'ai'
       );
       // Ensure we clean up if an error occurs during start-up
-      if (liveKitIsMicActive) stopMic();
-      if (isLiveKitConnected) disconnect();
+      // This cleanup logic is good. It ensures a consistent state even if part of the setup fails.
+      if (liveKitIsMicActive) stopMic(); // This might be redundant if `startMic` failed and mic wasn't active.
+      if (isLiveKitConnected) disconnect(); // This might be redundant if `connectToRoom` failed.
       setVoiceSession(null);
     }
   };
 
   // MODIFIED: This function now coordinates LiveKit disconnection and backend session end
   const handleStopVoiceInteraction = async () => {
+    // This check is robust.
     if (!liveKitIsMicActive && !isLiveKitConnected) {
       addMessage('No active voice session to end.', 'ai');
       return;
     }
     try {
       // Step 1: Stop microphone and disconnect from LiveKit
+      // Order matters: stopMic first to unpublish, then disconnect from the room.
       stopMic(); // Stop publishing audio
       disconnect(); // Disconnect from the room
 
@@ -264,17 +279,21 @@ function App() {
         );
 
         if (!response.ok) {
+          // It's good to log a warning here, as the frontend state is cleaned up
+          // regardless of backend success, but the backend might still think the session is active.
           console.warn('Failed to end session on backend, continuing with cleanup');
         }
       }
 
       // setIsVoiceActive(false); // No longer needed
-      setVoiceSession(null);
+      setVoiceSession(null); // Reset voice session state
       addMessage('Voice session ended.', 'ai');
 
-    } catch (error) {
+    } catch (error: any) { // Explicitly type error as 'any' or 'unknown' and then narrow
       console.error('Error ending voice session:', error);
       addMessage(`Error ending voice session: ${error.message}`, 'ai');
+      // Consider if any state needs to be reverted here if the error occurs during cleanup.
+      // For example, if `disconnect()` fails, `isLiveKitConnected` might still be true.
     }
   };
 
@@ -404,6 +423,9 @@ function App() {
             onStart={handleStartVoiceInteraction} // This will now handle both backend session and LiveKit mic start
             onStop={handleStopVoiceInteraction}   // This will now handle both LiveKit mic stop and backend session end
             isMicActive={liveKitIsMicActive}      // Pass LiveKit's mic status
+            // This `isConnecting` logic seems a bit complex. It might be simpler to derive it
+            // directly from `isLiveKitConnected` and `liveKitIsMicActive` or add a dedicated
+            // `isConnecting` state in `useLiveKitAudio` if the connection process is asynchronous.
             isConnecting={isLiveKitConnected === false && liveKitIsMicActive === false && voiceSession !== null} // Adjust logic if needed
             demoMode={false}
             className="backdrop-blur-2xl bg-white/[0.02] rounded-2xl border border-white/[0.05] py-8"
@@ -531,6 +553,7 @@ function App() {
             // Use liveKitIsMicActive for the button's state
             icon={liveKitIsMicActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             label={liveKitIsMicActive ? 'End Voice Session' : 'Start Voice Debate'}
+            // This logic is good, directly toggling based on the LiveKit mic status.
             onClick={liveKitIsMicActive ? handleStopVoiceInteraction : handleStartVoiceInteraction}
           />
         </motion.div>

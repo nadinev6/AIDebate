@@ -25,21 +25,9 @@ export function AIVoiceInput({
   demoMode = false,
   demoInterval = 3000,
   className,
-  isMicActive, // Destructure the new prop
-  isConnecting, // Destructure the new prop
+  isMicActive,
+  isConnecting,
 }: AIVoiceInputProps) {
-  // `submitted` state here seems to control the internal UI state (listening/not listening)
-  // and also triggers `onStart`/`onStop`.
-  // It's currently redundant with `isMicActive` passed from `App.tsx`.
-  // It would be better to directly use `isMicActive` to control the UI and trigger `onStop`
-  // when `isMicActive` becomes false (meaning the mic was stopped externally).
-  // The `submitted` state could be removed or renamed to something like `isListeningUI`.
-  // REVIEW COMMENT: This `submitted` state is indeed redundant. The `isMicActive` prop from `App.tsx`
-  // should be the single source of truth for whether the microphone is active.
-  // The `useEffect` below that depends on `submitted` should instead depend on `isMicActive`.
-  // The `handleClick` function should directly call `onStart` or `onStop` based on `isMicActive`,
-  // and the UI should react to `isMicActive` and `isConnecting`.
-  const [submitted, setSubmitted] = useState(false);
   const [time, setTime] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [isDemo, setIsDemo] = useState(demoMode);
@@ -48,58 +36,29 @@ export function AIVoiceInput({
     setIsClient(true);
   }, []);
 
-  // This useEffect currently triggers on `submitted` and `time` changes.
-  // If `submitted` is to be controlled by `isMicActive` from props, this logic needs adjustment.
-  // For example, if `isMicActive` becomes true, `onStart` should be called.
-  // If `isMicActive` becomes false, `onStop` should be called.
-  // The `time` state should only update if `isMicActive` is true.
-  // REVIEW COMMENT: This `useEffect` is problematic because `submitted` is an internal state
-  // that is not directly synchronized with the `isMicActive` prop.
-  // It should be refactored to directly use `isMicActive` to trigger `onStart`/`onStop` and manage `time`.
-  // Example:
-  // useEffect(() => {
-  //   let intervalId: NodeJS.Timeout;
-  //   if (isMicActive) {
-  //     onStart?.(); // This might be called repeatedly if not guarded in onStart itself
-  //     intervalId = setInterval(() => {
-  //       setTime((t) => t + 1);
-  //     }, 1000);
-  //   } else {
-  //     onStop?.(time);
-  //     setTime(0);
-  //   }
-  //   return () => clearInterval(intervalId);
-  // }, [isMicActive, time, onStart, onStop]);
+  // Timer management based on isMicActive prop
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
-    // This condition should likely be `if (isMicActive)` instead of `if (submitted)`
-    // to truly reflect the external state of the microphone.
-    if (submitted) {
-      onStart?.();
+    if (isMicActive) {
       intervalId = setInterval(() => {
         setTime((t) => t + 1);
       }, 1000);
     } else {
-      // This `onStop` call will be triggered every time `submitted` becomes false,
-      // which might happen if the user clicks the button to stop, or if `isMicActive`
-      // changes externally. Ensure this doesn't cause unintended side effects.
-      onStop?.(time);
       setTime(0);
     }
 
     return () => clearInterval(intervalId);
-  }, [submitted, time, onStart, onStop]); // Dependencies should include `isMicActive` if it drives `submitted`
+  }, [isMicActive]);
 
   // This demo mode logic is fine for its intended purpose.
   useEffect(() => {
     if (!isDemo) return;
 
-    let timeoutId: NodeJS COMMENT: This `useEffect` is fine for its intended demo mode functionality.
+    let timeoutId: NodeJS.Timeout;
     const runAnimation = () => {
-      setSubmitted(true);
+      // Demo mode doesn't need to trigger actual start/stop
       timeoutId = setTimeout(() => {
-        setSubmitted(false);
         timeoutId = setTimeout(runAnimation, 1000);
       }, demoInterval);
     };
@@ -120,28 +79,13 @@ export function AIVoiceInput({
   const handleClick = () => {
     if (isDemo) {
       setIsDemo(false);
-      setSubmitted(false);
     } else {
-      // This is where the internal `submitted` state is toggled.
-      // Instead of toggling `submitted`, this should call `onStart` or `onStop` directly.
-      // The `isMicActive` prop from `App.tsx` should then update, and the `useEffect` above
-      // should react to `isMicActive` to update the UI and call `onStart`/`onStop`.
-      // REVIEW COMMENT: This `handleClick` directly toggles `submitted`. This creates a disconnect
-      // between the `AIVoiceInput` component's internal state (`submitted`) and the actual microphone
-      // status (`isMicActive` from props).
-      // The `handleClick` should instead directly call the `onStart` or `onStop` props,
-      // and the `AIVoiceInput` component's UI should then *react* to the `isMicActive` prop
-      // changing, rather than relying on its own `submitted` state.
-      // Example:
-      // const handleClick = () => {
-      //   if (isDemo) { /* ... demo logic ... */ }
-      //   else if (isMicActive) {
-      //     onStop?.(time); // Call the prop directly
-      //   } else {
-      //     onStart?.(); // Call the prop directly
-      //   }
-      // };
-      setSubmitted((prev) => !prev);
+      // Directly call the appropriate callback based on current mic state
+      if (isMicActive) {
+        onStop?.(time);
+      } else {
+        onStart?.();
+      }
     }
   };
 
@@ -223,4 +167,4 @@ export function AIVoiceInput({
       </div>
     </div>
   );
-}
+} 

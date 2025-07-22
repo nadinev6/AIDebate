@@ -196,14 +196,7 @@ function App() {
     }
 
     try {
-      // Step 1: Request microphone permission (handled by startMic internally, but good to ensure)
-      // This `getUserMedia` call is redundant if `startMic` in `useLiveKitAudio` already handles it.
-      // If `startMic` handles it, this can be removed to avoid requesting permission twice or
-      // creating and stopping a stream unnecessarily.
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // Stop the test stream immediately
-
-      // Step 2: Generate a unique user identity
+      // Step 1: Generate a unique user identity
       const userIdentity = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // Step 2: Start voice session with backend to get LiveKit token
@@ -221,8 +214,6 @@ function App() {
       if (!response.ok) {
         // More specific error handling for backend response might be beneficial,
         // e.g., checking for 429 (Too Many Requests) from the backend.
-        // REVIEW COMMENT: Good point. Adding specific error handling for different HTTP status codes (e.g., 400, 429, 500)
-        // would provide more informative user feedback and allow for different recovery strategies.
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -251,9 +242,9 @@ function App() {
         'ai'
       );
       // Ensure we clean up if an error occurs during start-up
-      // This cleanup logic is good. It ensures a consistent state even if part of the setup fails.
-      if (liveKitIsMicActive) stopMic(); // This might be redundant if `startMic` failed and mic wasn't active.
-      if (isLiveKitConnected) disconnect(); // This might be redundant if `connectToRoom` failed.
+      // Unconditional cleanup to ensure consistent state regardless of where the error occurred
+      stopMic();
+      disconnect();
       setVoiceSession(null);
     }
   };
@@ -294,8 +285,9 @@ function App() {
     } catch (error: any) { // Explicitly type error as 'any' or 'unknown' and then narrow
       console.error('Error ending voice session:', error);
       addMessage(`Error ending voice session: ${error.message}`, 'ai');
-      // Consider if any state needs to be reverted here if the error occurs during cleanup.
-      // For example, if `disconnect()` fails, `isLiveKitConnected` might still be true.
+    } finally {
+      // Ensure voice session is always reset, even if cleanup fails
+      setVoiceSession(null);
     }
   };
 
@@ -344,9 +336,26 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  // Theme toggle state
+  const [darkMode, setDarkMode] = useState(true);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      {/* Theme Toggle is commented out */}
+      {/* Theme Toggle */}
+      <button 
+        onClick={() => setDarkMode(!darkMode)}
+        className="p-2 bg-primary text-primary-foreground rounded"
+      >
+        {darkMode ? '☀︎' : '☾'} 
+      </button>
 
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse" />
@@ -428,7 +437,7 @@ function App() {
             // This `isConnecting` logic seems a bit complex. It might be simpler to derive it
             // directly from `isLiveKitConnected` and `liveKitIsMicActive` or add a dedicated
             // `isConnecting` state in `useLiveKitAudio` if the connection process is asynchronous.
-            isConnecting={isLiveKitConnected === false && liveKitIsMicActive === false && voiceSession !== null} // Adjust logic if needed
+            isConnecting={voiceSession !== null && !isLiveKitConnected && !liveKitIsMicActive}
             demoMode={false}
             className="backdrop-blur-2xl bg-white/[0.02] rounded-2xl border border-white/[0.05] py-8"
           />
@@ -443,7 +452,7 @@ function App() {
         >
           <div
             ref={chatHistoryRef}
-            className="h-96 overflow-y-auto space-y-4 p-6 rounded-2xl backdrop-blur-2xl bg-white/[0.02] border border-white/[0.1]"
+            className="h-96 overflow-y-auto space-y-4 p-6 rounded-2xl backdrop-blur-2xl bg-white/[0.02] border border-white/[0.05]"
           >
             {messages.length === 0 ? (
               <div className="text-center py-12 space-y-4">
@@ -478,7 +487,7 @@ function App() {
                       {message.metadata?.confidence && (
                         <>
                           <span>•</span>
-                          <span>Confidence: ${(message.metadata.confidence * 100).toFixed(0)}%</span>
+                          <span>Confidence: {(message.metadata.confidence * 100).toFixed(0)}%</span>
                         </>
                       )}
                     </div>
@@ -614,4 +623,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 

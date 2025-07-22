@@ -196,17 +196,10 @@ function App() {
     }
 
     try {
-      // Step 1: Request microphone permission (handled by startMic internally, but good to ensure)
-      // This `getUserMedia` call is redundant if `startMic` in `useLiveKitAudio` already handles it.
-      // If `startMic` handles it, this can be removed to avoid requesting permission twice or
-      // creating and stopping a stream unnecessarily.
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // Stop the test stream immediately
-
-      // Step 2: Generate a unique user identity
+      // Step 1: Generate a unique user identity
       const userIdentity = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // Step 3: Start voice session with backend to get LiveKit token
+      // Step 2: Start voice session with backend to get LiveKit token
       const response = await fetch(`${apiBaseUrl}/api/voice/start-session`, {
         method: 'POST',
         headers: {
@@ -227,11 +220,11 @@ function App() {
       const sessionData = await response.json();
       setVoiceSession(sessionData);
 
-      // Step 4: Connect to LiveKit room using token from backend
+      // Step 3: Connect to LiveKit room using token from backend
       // It's important to await this connection before attempting to start the mic.
       await connectToRoom(sessionData.livekit_url, sessionData.token, sessionData.room_name);
 
-      // Step 5: Start the microphone and publish to LiveKit
+      // Step 4: Start the microphone and publish to LiveKit
       // This is the crucial line that was missing before
       await startMic(); // Ensure `startMic` handles potential errors (e.g., mic not found, permission denied) gracefully.
 
@@ -249,9 +242,9 @@ function App() {
         'ai'
       );
       // Ensure we clean up if an error occurs during start-up
-      // This cleanup logic is good. It ensures a consistent state even if part of the setup fails.
-      if (liveKitIsMicActive) stopMic(); // This might be redundant if `startMic` failed and mic wasn't active.
-      if (isLiveKitConnected) disconnect(); // This might be redundant if `connectToRoom` failed.
+      // Unconditional cleanup to ensure consistent state regardless of where the error occurred
+      stopMic();
+      disconnect();
       setVoiceSession(null);
     }
   };
@@ -292,8 +285,9 @@ function App() {
     } catch (error: any) { // Explicitly type error as 'any' or 'unknown' and then narrow
       console.error('Error ending voice session:', error);
       addMessage(`Error ending voice session: ${error.message}`, 'ai');
-      // Consider if any state needs to be reverted here if the error occurs during cleanup.
-      // For example, if `disconnect()` fails, `isLiveKitConnected` might still be true.
+    } finally {
+      // Ensure voice session is always reset, even if cleanup fails
+      setVoiceSession(null);
     }
   };
 
@@ -426,7 +420,7 @@ function App() {
             // This `isConnecting` logic seems a bit complex. It might be simpler to derive it
             // directly from `isLiveKitConnected` and `liveKitIsMicActive` or add a dedicated
             // `isConnecting` state in `useLiveKitAudio` if the connection process is asynchronous.
-            isConnecting={isLiveKitConnected === false && liveKitIsMicActive === false && voiceSession !== null} // Adjust logic if needed
+            isConnecting={voiceSession !== null && !isLiveKitConnected && !liveKitIsMicActive}
             demoMode={false}
             className="backdrop-blur-2xl bg-white/[0.02] rounded-2xl border border-white/[0.05] py-8"
           />

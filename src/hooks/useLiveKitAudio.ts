@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react"; // Import useState and useEffect
-import { Room, connect, createLocalAudioTrack, LocalAudioTrack, RoomEvent, RemoteParticipant, LocalParticipant } from "livekit-client"; // Import RoomEvent
+import { Room, connect, createLocalAudioTrack, LocalAudioTrack, RoomEvent, RemoteParticipant, LocalParticipant, RemoteAudioTrack } from "livekit-client"; // Import RoomEvent
 
 export function useLiveKitAudio() {
   const roomRef = useRef<Room | null>(null);
@@ -9,7 +9,13 @@ export function useLiveKitAudio() {
   const [isLiveKitConnected, setIsLiveKitConnected] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
   const [micError, setMicError] = useState<Error | null>(null);
+  const [remoteAudioTracks, setRemoteAudioTracks] = useState<RemoteAudioTrack[]>([]);
+  const [latestAgentText, setLatestAgentText] = useState<string | null>(null);
 
+  // Function to clear the latest agent text after it's been processed
+  const clearLatestAgentText = useCallback(() => {
+    setLatestAgentText(null);
+  }, []);
   // Connect to LiveKit room
   const connectToRoom = useCallback(async (url: string, token: string, roomName?: string) => { // Added roomName for consistent logging
     if (roomRef.current && roomRef.current.state === 'connected') {
@@ -46,9 +52,31 @@ export function useLiveKitAudio() {
               setIsMicActive(false);
           }
       });
+      room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        if (track instanceof RemoteAudioTrack) {
+          setRemoteAudioTracks(prev => [...prev, track]);
+        }
+      });
+      room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+        if (track instanceof RemoteAudioTrack) {
+          setRemoteAudioTracks(prev => prev.filter(t => t !== track));
+        }
+      });
+      room.on(RoomEvent.DataReceived, (payload, participant) => {
+        try {
+          const textDecoder = new TextDecoder();
+          const message = textDecoder.decode(payload);
+          const data = JSON.parse(message);
+          if (data.type === "agent_text" && data.content) {
+            setLatestAgentText(data.content);
+          }
+        } catch (error) {
+          console.error('Error parsing data message:', error);
+        }
+      });
 
       await room.connect(url, token, {
-        autoSubscribe: false, // Set to false if you're manually managing subscriptions
+        autoSubscribe: true, // Set to true to automatically receive audio from AI agent
       });
 
       return room;
@@ -108,6 +136,8 @@ export function useLiveKitAudio() {
     setIsLiveKitConnected(false); // Update state to false
     setIsMicActive(false); // Ensure mic is off
     setMicError(null); // Clear any errors
+    setRemoteAudioTracks([]); // Clear remote audio tracks
+    setLatestAgentText(null); // Clear latest agent text
   }, [stopMic]); // Dependency on stopMic
 
   // Cleanup on component unmount
@@ -128,6 +158,9 @@ export function useLiveKitAudio() {
     isMicActive,        // Now returned
     isLiveKitConnected, // Now returned
     micError,           // Now returned
+    remoteAudioTracks,  // Now returned
+    latestAgentText,    // Now returned
+    clearLatestAgentText, // Now returned
     // roomRef, // You generally don't need to expose the ref directly unless a very specific use case
   };
 }

@@ -41,6 +41,9 @@ function App() {
     isMicActive: liveKitIsMicActive, // Get current mic status from the hook
     isLiveKitConnected, // Get LiveKit connection status from the hook
     micError, // Get any mic errors from the hook
+    remoteAudioTracks, // Get remote audio tracks from the hook
+    latestAgentText, // Get latest agent text from the hook
+    clearLatestAgentText, // Get function to clear agent text from the hook
   } = useLiveKitAudio();
 
   // State management
@@ -95,6 +98,13 @@ function App() {
     }
   }, [micError]);
 
+  // Handle latest agent text from voice
+  useEffect(() => {
+    if (latestAgentText) {
+      addMessage(latestAgentText, 'ai');
+      clearLatestAgentText();
+    }
+  }, [latestAgentText, clearLatestAgentText]);
 
   const checkServerConnection = async () => {
     try {
@@ -569,6 +579,13 @@ function App() {
           />
         </motion.div>
 
+        {/* Remote Audio Tracks for AI Voice */}
+        <div className="hidden">
+          {remoteAudioTracks.map((track, index) => (
+            <RemoteAudioElement key={track.sid || index} track={track} />
+          ))}
+        </div>
+
         {/* Footer */}
         <motion.div
           className="text-center text-sm text-white/40"
@@ -621,6 +638,22 @@ function App() {
       </AnimatePresence>
     </div>
   );
+}
+
+// Component to handle remote audio track attachment
+function RemoteAudioElement({ track }: { track: any }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (audioRef.current && track) {
+      track.attach(audioRef.current);
+      return () => {
+        track.detach();
+      };
+    }
+  }, [track]);
+
+  return <audio ref={audioRef} autoPlay controls={false} />;
 }
 
 export default App; 

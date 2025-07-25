@@ -16,6 +16,7 @@ import asyncio
 import logging
 import os
 import sys
+import json
 from typing import Optional
 
 # Add the backend directory to the Python path
@@ -137,6 +138,19 @@ async def entrypoint(ctx: JobContext):
                 
                 # Generate RAG-enhanced counter-argument
                 counter_argument = await debate_agent.generate_counter_argument(latest_message)
+                
+                # Send the counter-argument text to frontend via data channel
+                try:
+                    data_payload = json.dumps({
+                        "type": "agent_text",
+                        "content": counter_argument
+                    }).encode('utf-8')
+                    await ctx.room.local_participant.publish_data(
+                        data_payload,
+                        kind=rtc.DataPacket_Kind.RELIABLE
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send agent text via data channel: {e}")
                 
                 # Create enhanced context with RAG response
                 enhanced_ctx = chat_ctx.copy()

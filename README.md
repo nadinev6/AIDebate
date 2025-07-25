@@ -26,15 +26,18 @@ AI Debate Partner is a real-time, browser-based platform where you can argue you
 
 ## 🛠️ Development Roadmap
 
-### Sprint 3: Real-time Voice Integration (🚧 In Progress)
+### Sprint 3: Real-time Voice Integration (✅ Complete - Backend, 🚧 Frontend Integration)
 - ✅ LiveKit voice session management
 - ✅ Voice session API endpoints with token generation
 - ✅ Frontend voice session controls
 - ✅ LiveKit agent framework with Cartesia TTS
-- 🚧 AssemblyAI speech-to-text integration
-- 🚧 Real-time audio streaming
-- 🚧 Voice activity detection
+- ✅ AssemblyAI speech-to-text integration
+- ✅ Real-time audio streaming
+- ✅ Voice activity detection
 - ✅ Unit tests for voice API endpoints
+- 🚧 Frontend audio playback from AI agent
+- 🚧 Display AI spoken responses in chat history
+- 🚧 Real-time communication between agent and frontend
 
 ### Sprint 4: Advanced AI Features
 - [ ] Context-aware conversation memory
@@ -98,6 +101,11 @@ cp .env.example .env
 **For Voice Features (Sprint 3):**
 ```bash
 # Add additional API keys to .env for voice functionality
+LIVEKIT_API_KEY=your_livekit_api_key_here
+LIVEKIT_API_SECRET=your_livekit_api_secret_here
+LIVEKIT_URL=wss://your-livekit-server.com
+ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
+CARTESIA_API_KEY=your_cartesia_api_key_here
 ```
 
 4. **Prepare the knowledge base:**
@@ -177,10 +185,14 @@ cat backend/performance_logs.jsonl
 - **🧠 Contextual Arguments**: AI draws from curated philosophical content
 - **📖 Knowledge Base Search**: Direct access to philosophical concepts
 
-### Sprint 3 (Voice Integration - In Progress)
+### Sprint 3 (Voice Integration - Backend Complete, Frontend In Progress)
 - 🎤 **Voice Session Management**: Start and manage real-time voice debates
 - 🔗 **LiveKit Integration**: Real-time audio streaming infrastructure
 - 🎭 **Cartesia TTS**: High-quality "Griffin" philosopher voice
+- 🎯 **Speech-to-Text**: AssemblyAI integration for voice input processing
+- 🤖 **AI Agent**: LiveKit agent with RAG-powered philosophical responses
+- 🚧 **Audio Playback**: Frontend integration for hearing AI responses (in progress)
+- 🚧 **Voice Chat History**: Display spoken AI responses in text chat (in progress)
 
 - 📱 **Mobile App**: Native mobile experience
 
@@ -256,7 +268,9 @@ python backend/agents/debate_agent.py
 ```
 
 **Frontend:**
-Access via: `http://localhost:8000/static/index.html`
+Access via: 
+- React dev server: `http://localhost:3000` (recommended for development)
+- FastAPI static files: `http://localhost:8000/static/index.html`
 
 ### Adding New Features
 
@@ -290,7 +304,7 @@ CARTESIA_VOICE_ID=griffin
 
 # Knowledge Base Configuration (Sprint 2+)
 KNOWLEDGE_BASE_PATH=backend/knowledge_base
-VECTOR_STORE_PATH=faiss_index
+VECTOR_STORE_PATH=backend/faiss_index
 
 # Model Configuration (Sprint 2+)
 MODEL_NAME=gpt-3.5-turbo

@@ -6,7 +6,32 @@ Future Sprints: Will expand with API keys and service configurations
 
 from pydantic_settings import BaseSettings
 from typing import Optional
+from dotenv import load_dotenv
 import logging
+import os 
+
+# --- DEBUGGING .env LOADING ---
+print(f"DEBUG: Current Working Directory: {os.getcwd()}")
+
+# Path from config.py to .env in the project root
+# Based on your structure: AIDebate/.env
+# and config.py is in AIDebate/backend/
+# So from config.py, we go up one level (..) to 'AIDebate/', then find '.env'
+dotenv_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+
+print(f"DEBUG: Expected .env path: {dotenv_file_path}")
+print(f"DEBUG: Does .env exist at path? {os.path.exists(dotenv_file_path)}")
+
+# Attempt to load the .env file
+# The `verbose=True` argument makes python-dotenv print if it found the file or not
+loaded_env_status = load_dotenv(dotenv_path=dotenv_file_path, verbose=True)
+print(f"DEBUG: load_dotenv status: {loaded_env_status}") # True if loaded, False if not found
+
+# --- Verify contents after loading ---
+print(f"DEBUG: LIVEKIT_URL from os.getenv: {os.getenv('LIVEKIT_URL')}")
+print(f"DEBUG: LIVEKIT_API_KEY from os.getenv: {os.getenv('LIVEKIT_API_KEY')}")
+print(f"DEBUG: LIVEKIT_API_SECRET from os.getenv: {os.getenv('LIVEKIT_API_SECRET')}")
+# --- END DEBUG PRINTS ---
 
 class Settings(BaseSettings):
     # Server configuration
@@ -41,8 +66,6 @@ class Settings(BaseSettings):
     VOICE_SESSION_TIMEOUT: int = 3600  # 1 hour in seconds
     MAX_CONCURRENT_SESSIONS: int = 10
 
-     # Added Cartesia:
-    CARTESIA_API: str
     
     class Config:
         env_file = ".env"

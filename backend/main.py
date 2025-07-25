@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from livekit.api import AccessToken, VideoGrants 
 import uvicorn
 import os
 import logging
@@ -14,6 +15,7 @@ import time
 import json
 from typing import List, Dict, Any, Optional
 import uuid
+import datetime
 
 # RAG and AI imports
 from langchain_community.vectorstores import FAISS
@@ -33,7 +35,6 @@ from livekit.plugins import (
     noise_cancellation,
     silero,
 )
-
 
 from config import settings
 
@@ -205,6 +206,16 @@ Your counter-argument:""",
         logger.error(f"Failed to initialize RAG: {str(e)}")
         return False
 
+def get_timeout_seconds():
+    """Helper function to safely get timeout in seconds"""
+    if isinstance(settings.VOICE_SESSION_TIMEOUT, int):
+        return settings.VOICE_SESSION_TIMEOUT
+    elif hasattr(settings.VOICE_SESSION_TIMEOUT, 'total_seconds'):
+        return int(settings.VOICE_SESSION_TIMEOUT.total_seconds())
+    else:
+        logger.warning(f"Unknown VOICE_SESSION_TIMEOUT type: {type(settings.VOICE_SESSION_TIMEOUT)}, using 1 hour default")
+        return 3600  # 1 hour fallback
+
 def generate_livekit_token(room_name: str, identity: str, name: Optional[str] = None) -> str:
     """Generate a LiveKit access token for a participant"""
     if not settings.LIVEKIT_API_KEY or not settings.LIVEKIT_API_SECRET:
@@ -213,7 +224,7 @@ def generate_livekit_token(room_name: str, identity: str, name: Optional[str] = 
     token = AccessToken(settings.LIVEKIT_API_KEY, settings.LIVEKIT_API_SECRET)
     token.with_identity(identity)
     token.with_name(name or identity)
-    token.with_grants(VideoGrant(
+    token.with_grants(VideoGrants(
         room_join=True,
         room=room_name,
         can_publish=True,
@@ -221,8 +232,10 @@ def generate_livekit_token(room_name: str, identity: str, name: Optional[str] = 
         can_publish_data=True
     ))
     
-    # Set token to expire in 1 hour
-    token.with_ttl(settings.VOICE_SESSION_TIMEOUT)
+    # FIXED: Use helper function to get timeout in seconds
+    timeout_seconds = get_timeout_seconds()
+    # NEW ATTEMPT: Pass a datetime.timedelta object to with_ttl
+    token.with_ttl(datetime.timedelta(seconds=timeout_seconds)) 
     
     return token.to_jwt()
 
@@ -458,16 +471,18 @@ async def start_voice_session(request: VoiceSessionRequest):
             identity=request.user_identity,
             name=request.participant_name
         )
-        
-        # Calculate expiration time
-        expires_at = int(time.time()) + settings.VOICE_SESSION_TIMEOUT
+
+        # FIXED: Calculate expiration time using helper function
+        current_time = int(time.time())
+        timeout_seconds = get_timeout_seconds()
+        expires_at = current_time + timeout_seconds
         
         # Store session info
         active_voice_sessions[session_id] = {
             "room_name": room_name,
             "user_identity": request.user_identity,
             "participant_name": request.participant_name,
-            "created_at": int(time.time()),
+            "created_at": current_time,
             "expires_at": expires_at,
             "status": "active"
         }
@@ -610,6 +625,7 @@ async def get_performance_metrics(limit: int = 100):
     except Exception as e:
         logger.error(f"Error retrieving performance metrics: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",

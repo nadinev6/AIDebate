@@ -24,7 +24,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from livekit import rtc
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
-from livekit.agents.pipeline import VoicePipelineAgent
+# from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import assemblyai, openai, cartesia
 import aiohttp
 
@@ -204,7 +204,5 @@ if __name__ == "__main__":
     cli.run_app(
         WorkerOptions(
             entrypoint_fnc=entrypoint,
-            # Configure the agent to automatically subscribe to audio tracks
-            auto_subscribe=AutoSubscribe.AUDIO_ONLY,
         )
     )

@@ -114,7 +114,7 @@ async def entrypoint(ctx: JobContext):
                 model=settings.LLM_MODEL,
                 api_key=settings.OPENAI_API_KEY,
                 temperature=settings.TEMPERATURE,
-                max_tokens=200,  # Shorter responses for voice
+                max_tokens=75,  # Shorter responses for voice
             ),
             tts=cartesia.TTS(
                 api_key=settings.CARTESIA_API_KEY,

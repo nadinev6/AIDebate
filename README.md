@@ -1,8 +1,8 @@
-# AI Debate Partner
+# AI Debate
 
 *Your Real-Time AI Opponent for Philosophical Arguments*
 
-AI Debate Partner is a real-time, browser-based platform where you can argue your idea and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
+AI Debate is a real-time, browser-based platform where you can argue your idea and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
 
 The aim was to create an AI opponent that **evolves with you, sharpening its arguments and, in turn, your intellect, the longer you engage.**
 
@@ -12,11 +12,11 @@ The project is fully functional, with all core features for real-time, RAG-power
 
 ## 🏗️ Architecture
 
-# AI Debate Partner
+# AI Debate
 
 *Your Real-Time AI Opponent for Philosophical Arguments*
 
-AI Debate Partner is a real-time, browser-based platform where you can argue your ideas—and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
+AI Debate is a real-time, browser-based platform where you can argue your ideas—and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
 
 The aim was to create an AI opponent that **evolves with you, sharpening its arguments and, in turn, your intellect, the longer you engage.**
 
@@ -26,7 +26,7 @@ The project is fully functional, with all core features for real-time, RAG-power
 
 ## 🏗️ Architecture
 
-ai-debate-partner/
+ai-debate/
 ├── backend/                 # Python FastAPI backend
 │   ├── main.py             # FastAPI server and routes
 │   ├── config.py           # Configuration management
@@ -51,8 +51,8 @@ ai-debate-partner/
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/ai-debate-partner.git](https://github.com/your-username/ai-debate-partner.git)
-    cd ai-debate-partner
+    git clone [https://github.com/your-username/ai-debate.git](https://github.com/your-username/ai-debate.git)
+    cd ai-debate
     ```
 
 2.  **Set up backend:**
@@ -114,7 +114,7 @@ ai-debate-partner/
 **Core API:**
 - `GET /` - API information
 - `GET /health` - Health check
-- `POST /api/debate/test` - Main RAG-powered debate endpoint
+- `POST /api/debate/test` - Main RAG-powered debate endpoint  
 - `GET /api/knowledge/topics` - Available philosophical topics
 - `GET /api/knowledge/search` - Search knowledge base directly
 

@@ -12,10 +12,6 @@ The project is fully functional, with all core features for real-time, RAG-power
 
 ## 🏗️ Architecture
 
-Certainly! Here's the raw Markdown version of the updated README, ready for you to copy and paste:
-
-Markdown
-
 # AI Debate Partner
 
 *Your Real-Time AI Opponent for Philosophical Arguments*

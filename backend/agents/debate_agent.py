@@ -17,15 +17,16 @@ import logging
 import os
 import sys
 import json
-from typing import Optional
+import traceback 
+from typing import Optional, AsyncIterator 
 
 # Add the backend directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from livekit import rtc
-from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
-# from livekit.agents.pipeline import VoicePipelineAgent
-from livekit.plugins import assemblyai, openai, cartesia
+from livekit.agents import JobContext, WorkerOptions, cli
+from livekit.agents.voice import Agent, AgentSession
+from livekit.plugins import assemblyai, openai, cartesia, silero 
 import aiohttp
 
 from config import settings
@@ -78,111 +79,130 @@ class DebateAgent:
             logger.error(f"Error generating counter-argument: {e}")
             return "Let me think about that for a moment..."
 
-async def entrypoint(ctx: JobContext):
-    """
-    Main entry point for the LiveKit agent
-    """
-    logger.info(f"Connecting to room {ctx.room.name}")
-    
-    # Initialize the debate agent
-    debate_agent = DebateAgent()
-    await debate_agent.initialize()
-    
-    try:
-        # Configure the voice pipeline
-        initial_ctx = llm.ChatContext().append(
-            role="system",
-            text=(
+class DebateLiveKitAgent(Agent):
+    def __init__(self, debate_api_client: DebateAgent):
+        super().__init__(
+            instructions=(
                 "You are a sophisticated AI philosopher engaged in a real-time debate. "
                 "Your role is to provide thoughtful, well-reasoned counter-arguments to "
                 "the user's positions. Draw upon philosophical traditions and thinkers "
                 "to challenge their assumptions. Be respectful but intellectually rigorous. "
                 "Keep your responses concise and engaging for spoken conversation."
             ),
-        )
-        
-        # Set up the voice pipeline agent
-        agent = VoicePipelineAgent(
-            vad=rtc.VAD.for_speaking_detection(),  # Voice Activity Detection
             stt=assemblyai.STT(
                 api_key=settings.ASSEMBLYAI_API_KEY,
-                language="en",
-                # Configure for real-time transcription
                 sample_rate=16000,
-                word_boost=["philosophy", "ethics", "morality", "justice", "consciousness"]
             ),
             llm=openai.LLM(
                 model=settings.LLM_MODEL,
+                api_key=settings.OPENAI_API_KEY
+            ),
+            # Temporarily use OpenAI TTS to test if the issue is with Cartesia
+            tts=openai.TTS(
                 api_key=settings.OPENAI_API_KEY,
-                temperature=settings.TEMPERATURE,
-                max_tokens=75,  # Shorter responses for voice
+                model="tts-1",
+                voice="alloy",
             ),
-            tts=cartesia.TTS(
-                api_key=settings.CARTESIA_API_KEY,
-                voice=settings.CARTESIA_VOICE_ID,  # Griffin voice
-                model="sonic-english",
-                sample_rate=24000,
-            ),
-            chat_ctx=initial_ctx,
+            # Original Cartesia config (commented out for testing):
+            # tts=cartesia.TTS(
+            #     api_key=settings.CARTESIA_API_KEY,
+            #     model="sonic-2.0",
+            #     voice="c99d36f3-5ffd-4253-803a-535c1bc9c306",
+            #     language="en",
+            # ),
+            vad=silero.VAD.load()
         )
         
-        # Custom function to enhance responses with RAG
-        original_llm_stream = agent._llm.chat
+        self.debate_api_client = debate_api_client
+
+    async def on_enter(self):
+        """Called when the agent enters the room"""
+        logger.info("Agent entered the room")
         
-        async def enhanced_llm_stream(chat_ctx, **kwargs):
-            """Enhanced LLM stream that incorporates RAG responses"""
-            # Get the latest user message
-            user_messages = [msg for msg in chat_ctx.messages if msg.role == "user"]
-            if user_messages:
-                latest_message = user_messages[-1].content
-                
+        # Send initial greeting
+        initial_message = (
+            "Welcome to the AI Debate Arena! I'm your philosophical opponent. "
+            "Present your argument, and I'll challenge it with reasoned counter-arguments."
+        )
+        
+        # Generate initial reply to start the conversation
+        self.session.generate_reply(initial_message)
+
+    async def on_user_speech_committed(self, user_msg):
+        """Called when user speech is transcribed and committed"""
+        user_utterance = user_msg.content.strip()
+        logger.info(f"User said: {user_utterance}")
+
+        if user_utterance:
+            try:
                 # Generate RAG-enhanced counter-argument
-                counter_argument = await debate_agent.generate_counter_argument(latest_message)
+                counter_argument = await self.debate_api_client.generate_counter_argument(user_utterance)
+                logger.info(f"RAG generated counter-argument: {counter_argument}")
                 
-                # Send the counter-argument text to frontend via data channel
-                try:
-                    data_payload = json.dumps({
-                        "type": "agent_text",
-                        "content": counter_argument
-                    }).encode('utf-8')
-                    await ctx.room.local_participant.publish_data(
-                        data_payload,
-                        kind=rtc.DataPacket_Kind.RELIABLE
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to send agent text via data channel: {e}")
+                # Limit response length to avoid TTS issues
+                if len(counter_argument) > 500:
+                    counter_argument = counter_argument[:500] + "..."
+                    logger.info("Truncated response for TTS stability")
                 
-                # Create enhanced context with RAG response
-                enhanced_ctx = chat_ctx.copy()
-                enhanced_ctx.append(
-                    role="assistant",
-                    text=counter_argument
+                # Send the counter-argument as agent's response
+                self.session.generate_reply(counter_argument)
+                
+                # Send text via data channel for frontend display if needed
+                await self._send_agent_text_data_channel(counter_argument)
+
+            except Exception as e:
+                logger.error(f"Error processing user speech: {e}")
+                fallback_response = "I need a moment to consider your argument more carefully."
+                self.session.generate_reply(fallback_response)
+
+    async def _send_agent_text_data_channel(self, text: str):
+        """Helper to send text responses via data channel to frontend"""
+        try:
+            if hasattr(self, 'session') and self.session and self.session.room:
+                data_payload = json.dumps({
+                    "type": "agent_text",
+                    "content": text
+                }).encode('utf-8')
+                await self.session.room.local_participant.publish_data(
+                    data_payload,
+                    kind=rtc.DataPacket_Kind.RELIABLE
                 )
-                
-                # Use the enhanced response
-                return original_llm_stream(enhanced_ctx, **kwargs)
-            
-            return original_llm_stream(chat_ctx, **kwargs)
+                logger.info(f"Sent agent text via data channel: {text[:50]}...")
+        except Exception as e:
+            logger.error(f"Failed to send agent text via data channel: {e}")
+
+
+async def entrypoint(ctx: JobContext):
+    """Main entrypoint for the LiveKit agent"""
+    logger.info(f"Job assigned for room: {ctx.room.name}")
+    
+    # Initialize RAG API client
+    debate_api_client = DebateAgent()
+    await debate_api_client.initialize()
+
+    try:
+        # Create agent session
+        session = AgentSession()
         
-        # Replace the LLM stream method
-        agent._llm.chat = enhanced_llm_stream
+        # Create agent instance
+        agent = DebateLiveKitAgent(debate_api_client)
         
-        # Start the agent
-        agent.start(ctx.room)
+        # Start the agent session
+        await session.start(
+            agent=agent,
+            room=ctx.room
+        )
         
-        # Wait for the first participant to connect
-        await agent.say("Welcome to the AI Debate Arena! I'm your philosophical opponent. Present your argument, and I'll challenge it with reasoned counter-arguments.", allow_interruptions=True)
-        
-        logger.info("Debate agent is ready and waiting for participants")
-        
-        # Keep the agent running
-        await agent.aclose()
+        logger.info("Agent session started successfully")
         
     except Exception as e:
-        logger.error(f"Error in debate agent: {e}")
+        logger.error(f"Error in LiveKit agent entrypoint: {e}")
+        traceback.print_exc()
         raise
     finally:
-        await debate_agent.cleanup()
+        logger.info("LiveKit agent is cleaning up...")
+        await debate_api_client.cleanup()
+
 
 if __name__ == "__main__":
     # Validate required environment variables
@@ -195,7 +215,7 @@ if __name__ == "__main__":
         "CARTESIA_API_KEY"
     ]
     
-    missing_vars = [var for var in required_vars if not getattr(settings, var)]
+    missing_vars = [var for var in required_vars if not getattr(settings, var, None)]
     if missing_vars:
         logger.error(f"Missing required environment variables: {missing_vars}")
         sys.exit(1)

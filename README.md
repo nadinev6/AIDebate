@@ -1,8 +1,8 @@
-# AI Debate
+# AI Debate 
 
 *Your Real-Time AI Opponent for Philosophical Arguments*
 
-AI Debate is a real-time, browser-based platform where you can argue your idea and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
+AI Debate is a real-time, browser-based platform where you can argue your ideas and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
 
 The aim was to create an AI opponent that **evolves with you, sharpening its arguments and, in turn, your intellect, the longer you engage.**
 
@@ -12,34 +12,22 @@ The project is fully functional, with all core features for real-time, RAG-power
 
 ## 🏗️ Architecture
 
-# AI Debate
-
-*Your Real-Time AI Opponent for Philosophical Arguments*
-
-AI Debate is a real-time, browser-based platform where you can argue your ideas—and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
-
-The aim was to create an AI opponent that **evolves with you, sharpening its arguments and, in turn, your intellect, the longer you engage.**
-
-## 🚀 Current Status
-
-The project is fully functional, with all core features for real-time, RAG-powered philosophical debates implemented.
-
-## 🏗️ Architecture
-
-ai-debate/
-├── backend/                 # Python FastAPI backend
-│   ├── main.py             # FastAPI server and routes
-│   ├── config.py           # Configuration management
-│   ├── agents/             # LiveKit agents for real-time voice
-│   ├── requirements.txt    # Python dependencies
-│   └── init.py        # Package initialisation
-├── frontend/               # HTML/CSS/JavaScript frontend
-│   ├── index.html         # Main application page
-│   ├── style.css          # Responsive styles
-│   ├── script.js          # Frontend logic
-│   └── assets/            # Static assets
-├── .env.example           # Environment configuration template
-└── README.md             # This file
+```
+ai-debate-partner/
+├── backend/                 # Python FastAPI backend
+│   ├── main.py             # FastAPI server and routes
+│   ├── config.py           # Configuration management
+│   ├── agents/             # LiveKit agents for real-time voice
+│   ├── requirements.txt    # Python dependencies
+│   └── __init__.py         # Package initialisation
+├── frontend/               # HTML/CSS/JavaScript frontend
+│   ├── index.html         # Main application page
+│   ├── style.css          # Responsive styles
+│   ├── script.js          # Frontend logic
+│   └── assets/            # Static assets
+├── .env.example           # Environment configuration template
+└── README.md             # This file
+```
 
 ## 🚀 Quick Start
 
@@ -49,76 +37,76 @@ ai-debate/
 
 ### Installation
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/your-username/ai-debate.git](https://github.com/your-username/ai-debate.git)
-    cd ai-debate
-    ```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/ai-debate-partner.git
+   cd ai-debate-partner
+   ```
 
-2.  **Set up backend:**
-    ```bash
-    cd backend
-    pip install -r requirements.txt
-    ```
-    **Important Note for Voice Features:** Ensure you have an updated version of `livekit` and `livekit-vad` installed in your virtual environment. If you encounter issues, consider updating them:
-    ```bash
-    pip install --upgrade livekit livekit-plugins-vad
-    ```
+2. **Set up backend:**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
+   
+   **Important Note for Voice Features:** Ensure you have an updated version of `livekit` and `livekit-vad` installed in your virtual environment. If you encounter issues, consider updating them:
+   ```bash
+   pip install --upgrade livekit livekit-plugins-vad
+   ```
 
-3.  **Configure environment:**
-    ```bash
-    cp .env.example .env
-    # Edit .env with your API keys
-    # Add your OpenAI API key: OPENAI_API_KEY=your_key_here
-    ```
+3. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys
+   # Add your OpenAI API key: OPENAI_API_KEY=your_key_here
+   ```
 
-    **For Voice Features:**
-    ```bash
-    # Add additional API keys to .env for voice functionality
-    LIVEKIT_API_KEY=your_livekit_api_key_here
-    LIVEKIT_API_SECRET=your_livekit_api_secret_here
-    LIVEKIT_URL=wss://your-livekit-server.com
-    ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
-    CARTESIA_API_KEY=your_cartesia_api_key_here
-    ```
+   **For Voice Features:**
+   ```bash
+   # Add additional API keys to .env for voice functionality
+   LIVEKIT_API_KEY=your_livekit_api_key_here
+   LIVEKIT_API_SECRET=your_livekit_api_secret_here
+   LIVEKIT_URL=wss://your-livekit-server.com
+   ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
+   CARTESIA_API_KEY=your_cartesia_api_key_here
+   ```
 
-4.  **Prepare the knowledge base:**
-    ```bash
-    python backend/prepare_knowledge_base.py
-    ```
+4. **Prepare the knowledge base:**
+   ```bash
+   python backend/prepare_knowledge_base.py
+   ```
 
-5.  **Run the application:**
+5. **Run the application:**
 
-    First, **start the main backend server:**
-    ```bash
-    cd backend
-    python main.py
-    ```
-    *The server will typically start on `http://localhost:8000`.*
+   First, **start the main backend server:**
+   ```bash
+   cd backend
+   python main.py
+   ```
+   *The server will typically start on `http://localhost:8000`.*
 
-    Second, **in a separate terminal, start the LiveKit debate agent:**
-    ```bash
-    cd backend
-    python agents/debate_agent.py dev
-    ```
-    *This command runs the debate agent in a development mode.*
+   Second, **in a separate terminal, start the LiveKit debate agent:**
+   ```bash
+   cd backend
+   python agents/debate_agent.py dev
+   ```
+   *This command runs the debate agent in a development mode.*
 
-6.  **Access the application:**
-    - Open your browser to `http://localhost:8000/static/index.html`
-    - Or use the development server preview in your IDE
+6. **Access the application:**
+   - Open your browser to `http://localhost:8000/static/index.html`
+   - Or use the development server preview in your IDE
 
 ## 🔧 API Endpoints
 
-### Current Endpoints
-
-**Core API:**
+### Core API
 - `GET /` - API information
 - `GET /health` - Health check
-- `POST /api/debate/test` - Main RAG-powered debate endpoint  
+- `POST /api/debate/test` - Main RAG-powered debate endpoint
 - `GET /api/knowledge/topics` - Available philosophical topics
 - `GET /api/knowledge/search` - Search knowledge base directly
+- `GET /api/debate/history` - Debate session history
 
-**Voice API:**
+### Voice API
 - `POST /api/voice/start-session` - Start a voice debate session
 - `GET /api/voice/session/{session_id}` - Get voice session status
 - `DELETE /api/voice/session/{session_id}` - End a voice session
@@ -139,6 +127,7 @@ curl http://localhost:8000/api/performance/metrics
 
 # Or view raw log file
 cat backend/performance_logs.jsonl
+```
 
 **Metrics Include:**
 - Response time (seconds)
@@ -146,8 +135,6 @@ cat backend/performance_logs.jsonl
 - Message length
 - Success/failure status
 - Timestamp and error details
-
-- `GET /api/debate/history` - Debate session history
 
 ## 🎨 Features
 
@@ -160,18 +147,18 @@ cat backend/performance_logs.jsonl
 - **🔍 Source Attribution**: See which philosophical texts inform AI responses
 - **🧠 Contextual Arguments**: AI draws from curated philosophical content
 - **📖 Knowledge Base Search**: Direct access to philosophical concepts
-- 🎤 **Voice Session Management**: Start and manage real-time voice debates
-- 🔗 **LiveKit Integration**: Real-time audio streaming infrastructure
-- 🎭 **OpenAI/Cartesia TTS**: High-quality "Griffin" philosopher voice
-- 🎯 **Speech-to-Text**: AssemblyAI integration for voice input processing
-- 🤖 **AI Agent**: LiveKit agent with RAG-powered philosophical responses
+- **🎤 Voice Session Management**: Start and manage real-time voice debates
+- **🔗 LiveKit Integration**: Real-time audio streaming infrastructure
+- **🎭 OpenAI/Cartesia TTS**: High-quality "Griffin" philosopher voice
+- **🎯 Speech-to-Text**: AssemblyAI integration for voice input processing
+- **🤖 AI Agent**: LiveKit agent with RAG-powered philosophical responses
 - **Audio Playback**: Frontend integration for hearing AI responses
 - **Voice Chat History**: Display spoken AI responses in text chat
-- 📱 **Mobile App**: Native mobile experience
+- **📱 Mobile App**: Native mobile experience
 
 ## 🔧 Technology Stack
 
-**Backend:**
+### Backend
 - FastAPI - Modern Python web framework
 - Uvicorn - ASGI server
 - Pydantic - Data validation
@@ -180,13 +167,13 @@ cat backend/performance_logs.jsonl
 - LiveKit Agents - AI agent framework
 - FAISS - Vector similarity search
 
-**Frontend:**
+### Frontend
 - Vanilla HTML/CSS/JavaScript
 - Modern CSS Grid and Flexbox
 - Responsive design principles
 - Real-time API communication
 
-**AI Services:**
+### AI Services
 - OpenAI GPT models for text generation
 - AssemblyAI for speech-to-text
 - OpenAI TTS / Cartesia for high-quality text-to-speech (Griffin voice)
@@ -197,30 +184,30 @@ cat backend/performance_logs.jsonl
 ## 📁 Project Structure Details
 
 ### Backend Structure
-
+```
 backend/
-├── main.py              # FastAPI application and routes
-├── config.py            # Settings and environment management
-├── requirements.txt     # Python dependencies
-├── agents/              # LiveKit agents for voice interaction
-├── tests/               # Unit tests for API endpoints
-├── init.py         # Package initialisation
-└──
-    ├── knowledge_base/  # Markdown knowledge files
-    ├── models/         # Data models and schemas
-    ├── services/       # Business logic services
-    └── utils/          # Utility functions
+├── main.py              # FastAPI application and routes
+├── config.py            # Settings and environment management
+├── requirements.txt     # Python dependencies
+├── agents/              # LiveKit agents for voice interaction
+├── tests/               # Unit tests for API endpoints
+├── __init__.py          # Package initialisation
+├── knowledge_base/      # Markdown knowledge files
+├── models/              # Data models and schemas
+├── services/            # Business logic services
+└── utils/               # Utility functions
+```
 
 ### Frontend Structure
+```
 frontend/
-├── index.html          # Main application page
-├── style.css           # Responsive styles and animations
-├── script.js           # Application logic and API calls
-├── assets/            # Static assets (images, icons)
-└──
-    ├── components/     # Reusable UI components
-    └── modules/        # Feature-specific JavaScript modules
-
+├── index.html          # Main application page
+├── style.css           # Responsive styles and animations
+├── script.js           # Application logic and API calls
+├── assets/             # Static assets (images, icons)
+├── components/         # Reusable UI components
+└── modules/            # Feature-specific JavaScript modules
+```
 
 ## 🚀 Development
 
@@ -231,25 +218,24 @@ frontend/
 cd backend
 python main.py
 # Server starts on http://localhost:8000
-
-
+```
 
 **Voice Agent:**
 ```bash
 python backend/agents/debate_agent.py dev
+```
 
 **Frontend:**
 Access via:
-
 - React dev server: `http://localhost:3000` (recommended for development)
 - FastAPI static files: `http://localhost:8000/static/index.html`
 
 ### Adding New Features
 
-1.  **Backend Features**: Add new routes in `main.py` or create new modules
-2.  **Frontend Features**: Update `script.js` and add styling to `style.css`
-3.  **Configuration**: Add new environment variables to `.env.example`
-4.  **Voice Features**: Extend agents in `backend/agents/` directory
+1. **Backend Features**: Add new routes in `main.py` or create new modules
+2. **Frontend Features**: Update `script.js` and add styling to `style.css`
+3. **Configuration**: Add new environment variables to `.env.example`
+4. **Voice Features**: Extend agents in `backend/agents/` directory
 
 ## 🔐 Environment Variables
 
@@ -292,7 +278,8 @@ MAX_CONCURRENT_SESSIONS=10
 
 # Security Configuration (Future Feature)
 # SECRET_KEY=your-secret-key-here
-# CORS_ORIGINS=["http://localhost:3000", "[https://yourdomain.com](https://yourdomain.com)"]
+# CORS_ORIGINS=["http://localhost:3000", "https://yourdomain.com"]
+```
 
 ## 🧪 Testing
 
@@ -301,6 +288,7 @@ Run the test suite:
 ```bash
 cd backend
 python -m pytest tests/ -v
+```
 
 ## 📝 License
 

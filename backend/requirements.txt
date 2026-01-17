@@ -2,7 +2,9 @@
 # Sprint 1: Core FastAPI setup and real-time capabilities
 
 # Real-time AI and voice processing
-livekit-agents[assemblyai,openai]
+livekit-agents[assemblyai,openai]==1.2.18
+livekit-plugins-assemblyai==1.2.18
+livekit-plugins-openai==1.2.18
 
 # Web framework and server
 fastapi
@@ -14,6 +16,10 @@ pydantic-settings
 
 # AI and knowledge base (Sprint 2+)
 langchain
+langchain-community
+langchain-huggingface
+langchain-openai
+langchain-core
 faiss-cpu
 sentence-transformers
 

@@ -2,13 +2,24 @@
 
 *Your Real-Time AI Opponent for Philosophical Arguments*
 
+![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.68.0%2B-green)
+![LiveKit](https://img.shields.io/badge/LiveKit-1.0%2B-orange)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--3.5%2B-yellow)
+![AssemblyAI](https://img.shields.io/badge/AssemblyAI-Speech--to--Text-red)
+
+**Optional Features:**
+![Cerebras AI](https://img.shields.io/badge/Cerebras%20AI-Fast%20Inference-purple)
+![Redis](https://img.shields.io/badge/Redis-Caching-lightgrey)
+
 AI Debate is a real-time, browser-based platform where you can argue your ideas and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
 
 The aim was to create an AI opponent that **evolves with you, sharpening its arguments and, in turn, your intellect, the longer you engage.**
 
 ## 🚀 Current Status
 
-The project is fully functional, with all core features for real-time, RAG-powered philosophical debates implemented.
+The project is fully functional, with all core features for real-time, RAG-powered philosophical debates implemented. Additionally, it now includes an enhanced settings panel with advanced knowledge base management, AI provider options, and improved citation capabilities.
 
 ## 🏗️ Architecture
 
@@ -19,6 +30,8 @@ ai-debate-partner/
 │   ├── config.py           # Configuration management
 │   ├── agents/             # LiveKit agents for real-time voice
 │   ├── requirements.txt    # Python dependencies
+│   ├── services/           # Business logic services
+│   ├── uploaded_documents/ # Local document storage
 │   └── __init__.py         # Package initialisation
 ├── frontend/               # HTML/CSS/JavaScript frontend
 │   ├── index.html         # Main application page
@@ -39,7 +52,7 @@ ai-debate-partner/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/ai-debate-partner.git
+   git clone https://github.com/nadinev6/aidebate.git
    cd ai-debate-partner
    ```
 
@@ -155,6 +168,14 @@ cat backend/performance_logs.jsonl
 - **Audio Playback**: Frontend integration for hearing AI responses
 - **Voice Chat History**: Display spoken AI responses in text chat
 - **📱 Mobile App**: Native mobile experience
+- **📁 Document Upload**: Upload PDF, TXT, and MD files to enhance AI's knowledge
+- **🔧 Settings Panel**: Configure AI provider, voice settings, and more
+- **🔄 AI Provider Options**: Switch between local RAG and Cerebras AI
+- **🎤 Voice Customization**: Choose from multiple OpenAI TTS voices
+- **📜 Live Transcription**: Real-time markdown-formatted transcription viewer
+- **📝 Enhanced Citations**: Comprehensive source information with excerpts
+- **📄 Transcript Export**: Export well-formatted markdown transcripts
+- **🔌 Optional Redis Caching**: Improve performance with Redis for embeddings
 
 ## 🔧 Technology Stack
 
@@ -166,12 +187,15 @@ cat backend/performance_logs.jsonl
 - LiveKit - Real-time audio/video streaming
 - LiveKit Agents - AI agent framework
 - FAISS - Vector similarity search
+- Redis (optional) - Caching for embeddings
 
 ### Frontend
 - Vanilla HTML/CSS/JavaScript
 - Modern CSS Grid and Flexbox
 - Responsive design principles
 - Real-time API communication
+- React Markdown - Markdown rendering
+- Remark GFM - GitHub Flavored Markdown support
 
 ### AI Services
 - OpenAI GPT models for text generation
@@ -180,6 +204,7 @@ cat backend/performance_logs.jsonl
 - LiveKit for real-time audio streaming
 - Sentence Transformers for embeddings
 - FAISS for vector similarity search
+- Cerebras AI (optional) - Fast inference alternative
 
 ## 📁 Project Structure Details
 
@@ -195,7 +220,9 @@ backend/
 ├── knowledge_base/      # Markdown knowledge files
 ├── models/              # Data models and schemas
 ├── services/            # Business logic services
-└── utils/               # Utility functions
+├── uploaded_documents/  # Local document storage
+├── utils/               # Utility functions
+└── redis_cache.py       # Optional Redis caching
 ```
 
 ### Frontend Structure
@@ -206,7 +233,8 @@ frontend/
 ├── script.js           # Application logic and API calls
 ├── assets/             # Static assets (images, icons)
 ├── components/         # Reusable UI components
-└── modules/            # Feature-specific JavaScript modules
+├── modules/            # Feature-specific JavaScript modules
+└── SettingsPanel.tsx   # Settings panel component
 ```
 
 ## 🚀 Development
@@ -273,6 +301,13 @@ TEMPERATURE=0.7
 VOICE_SESSION_TIMEOUT=3600
 MAX_CONCURRENT_SESSIONS=10
 
+# Redis Configuration (Optional)
+REDIS_URL=redis://localhost:6379
+USE_REDIS_CACHE=false
+
+# Cerebras AI Configuration (Optional)
+CEREBRAS_API_KEY=your_cerebras_api_key_here
+
 # Database Configuration (Future Feature)
 # DATABASE_URL=sqlite:///./debates.db
 
@@ -289,6 +324,27 @@ Run the test suite:
 cd backend
 python -m pytest tests/ -v
 ```
+
+### Testing New Features
+
+1. **Document Upload**:
+   - Upload a PDF, TXT, or MD file via the settings panel
+   - Verify the document appears in the list
+   - Ensure the document is available for RAG queries
+
+2. **Cerebras AI Integration**:
+   - Switch to Cerebras AI in the settings panel
+   - Enter your API key
+   - Send a message to verify faster response times
+
+3. **Voice Customization**:
+   - Select a different voice in the settings panel
+   - Start a voice session to confirm the voice change
+
+4. **Live Transcription**:
+   - Start a voice session
+   - Speak to the AI and verify real-time transcription
+   - Test the pause/resume auto-scroll feature
 
 ## 📝 License
 

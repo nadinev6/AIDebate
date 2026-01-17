@@ -12,10 +12,10 @@ interface AIVoiceInputProps {
   demoMode?: boolean;
   demoInterval?: number;
   className?: string;
-  // Added prop to receive mic active status from App.tsx (which gets it from useLiveKitAudio)
   isMicActive: boolean;
-  // Added prop to indicate if connection is in progress
   isConnecting: boolean;
+  selectedVoice?: string;
+  onVoiceChange?: (voice: string) => void;
 }
 
 export function AIVoiceInput({
@@ -27,6 +27,8 @@ export function AIVoiceInput({
   className,
   isMicActive,
   isConnecting,
+  selectedVoice = 'alloy',
+  onVoiceChange,
 }: AIVoiceInputProps) {
   const [time, setTime] = useState(0);
   const [isClient, setIsClient] = useState(false);
@@ -89,9 +91,34 @@ export function AIVoiceInput({
     }
   };
 
+  const voices = [
+    { value: 'alloy', label: 'Alloy', desc: 'Neutral, balanced' },
+    { value: 'echo', label: 'Echo', desc: 'Warm, professional' },
+    { value: 'fable', label: 'Fable', desc: 'Expressive' },
+    { value: 'onyx', label: 'Onyx', desc: 'Deep, authoritative' },
+    { value: 'nova', label: 'Nova', desc: 'Energetic' },
+    { value: 'shimmer', label: 'Shimmer', desc: 'Bright, friendly' },
+  ];
+
   return (
     <div className={cn("w-full py-4", className)}>
       <div className="relative max-w-xl w-full mx-auto flex items-center flex-col gap-2">
+        {onVoiceChange && (
+          <div className="mb-2 w-full max-w-xs">
+            <select
+              value={selectedVoice}
+              onChange={(e) => onVoiceChange(e.target.value)}
+              disabled={isMicActive || isConnecting}
+              className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {voices.map((voice) => (
+                <option key={voice.value} value={voice.value}>
+                  {voice.label} - {voice.desc}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <button
           className={cn(
             "group w-16 h-16 rounded-xl flex items-center justify-center transition-colors",

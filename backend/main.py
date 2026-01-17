@@ -3,7 +3,7 @@ AI Debate Partner - FastAPI Backend with RAG
 Enhanced with Retrieval-Augmented Generation for philosophical debates
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -34,6 +34,9 @@ from livekit.plugins import (
 )
 
 from config import settings
+from backend.document_processor import document_processor
+from backend.cerebras_client import cerebras_client
+from backend.redis_cache import redis_cache
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -437,6 +440,102 @@ async def search_knowledge(query: str, limit: int = 5):
         
     except Exception as e:
         logger.error(f"Error searching knowledge base: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Document upload endpoints
+@app.post("/api/documents/upload")
+async def upload_document(file: UploadFile = File(...)):
+    """
+    Upload a document to the knowledge base
+    """
+    try:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No file provided")
+
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        if file_ext not in settings.ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid file type. Allowed: {', '.join(settings.ALLOWED_EXTENSIONS)}"
+            )
+
+        content = await file.read()
+
+        if len(content) > settings.MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File too large. Max size: {settings.MAX_FILE_SIZE / (1024*1024)}MB"
+            )
+
+        save_result = document_processor.save_file(file.filename, content)
+
+        if not save_result.get("success"):
+            raise HTTPException(status_code=500, detail=save_result.get("error"))
+
+        parse_result = document_processor.parse_document(save_result["path"])
+
+        if not parse_result.get("success"):
+            raise HTTPException(status_code=500, detail=parse_result.get("error"))
+
+        logger.info(f"Document uploaded and processed: {file.filename}")
+
+        return {
+            "id": save_result["id"],
+            "filename": save_result["filename"],
+            "size": save_result["size"],
+            "pages": len(parse_result.get("pages", [])),
+            "status": "ready"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading document: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/documents/{document_id}")
+async def delete_document(document_id: str):
+    """
+    Delete a document from the knowledge base
+    """
+    try:
+        success = document_processor.delete_document(document_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        logger.info(f"Document deleted: {document_id}")
+
+        return {"message": "Document deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting document: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/cache/stats")
+async def get_cache_stats():
+    """
+    Get Redis cache statistics
+    """
+    try:
+        stats = redis_cache.get_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting cache stats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/cache/clear")
+async def clear_cache():
+    """
+    Clear the Redis cache
+    """
+    try:
+        success = redis_cache.clear()
+        return {"success": success, "message": "Cache cleared successfully"}
+    except Exception as e:
+        logger.error(f"Error clearing cache: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Voice session endpoints (Sprint 3)

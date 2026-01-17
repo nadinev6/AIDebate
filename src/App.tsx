@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Wifi, WifiOff, MessageSquare, Sparkles, Download, Mic, MicOff } from 'lucide-react';
+import { Wifi, WifiOff, MessageSquare, Sparkles, Download, Mic, MicOff, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatInput, TypingDots, ActionButton } from '@/components/ui/chat-input';
 import { AIVoiceInput } from '@/components/ui/ai-voice-input';
+import { SettingsPanel } from '@/components/ui/settings-panel';
+import { TranscriptionViewer, TranscriptionSegment } from '@/components/ui/transcription-viewer';
+import { MarkdownContent } from '@/components/ui/markdown-content';
+import { CitationList, CitationData } from '@/components/ui/citation';
+import { useSettings } from '@/hooks/useSettings';
 import { useLiveKitAudio } from "@/hooks/useLiveKitAudio";
 
 interface Message {
@@ -29,34 +34,33 @@ interface VoiceSession {
 }
 
 function App() {
-  // Destructure functions from the hook inside the component
-  // This ensures they are part of the component's render cycle
+  const { settings, updateSettings } = useSettings();
+
   const {
     connectToRoom,
     startMic,
     stopMic,
     disconnect,
-    // It's good practice to explicitly destructure all used values from the hook
-    // even if some are not directly used in the component's render, but rather in effects or handlers.
-    isMicActive: liveKitIsMicActive, // Get current mic status from the hook
-    isLiveKitConnected, // Get LiveKit connection status from the hook
-    micError, // Get any mic errors from the hook
-    remoteAudioTracks, // Get remote audio tracks from the hook
-    latestAgentText, // Get latest agent text from the hook
-    clearLatestAgentText, // Get function to clear agent text from the hook
+    isMicActive: liveKitIsMicActive,
+    isLiveKitConnected,
+    micError,
+    remoteAudioTracks,
+    latestAgentText,
+    clearLatestAgentText,
   } = useLiveKitAudio();
 
-  // State management
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
-  const [isConnected, setIsConnected] = useState(false); // Your backend connection status
-  // const [isVoiceActive, setIsVoiceActive] = useState(false); // This will now be derived from liveKitIsMicActive + isLiveKitConnected
+  const [isConnected, setIsConnected] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [voiceSession, setVoiceSession] = useState<VoiceSession | null>(null);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
   const [attachments, setAttachments] = useState<string[]>([]);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [inputFocused, setInputFocused] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [transcriptionSegments, setTranscriptionSegments] = useState<TranscriptionSegment[]>([]);
+  const [transcriptionCollapsed, setTranscriptionCollapsed] = useState(false);
 
   // Refs for DOM access
   const chatHistoryRef = useRef<HTMLDivElement>(null);
@@ -376,11 +380,18 @@ function App() {
       <div className="container mx-auto px-4 py-6 max-w-4xl relative z-10">
         {/* Header */}
         <motion.div
-          className="text-center mb-8"
+          className="text-center mb-8 relative"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="absolute top-0 right-0 p-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.05] transition-colors"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5 text-white/70" />
+          </button>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -441,13 +452,12 @@ function App() {
             our combined voice interaction functions.
           */}
           <AIVoiceInput
-            onStart={handleStartVoiceInteraction} // This will now handle both backend session and LiveKit mic start
-            onStop={handleStopVoiceInteraction}   // This will now handle both LiveKit mic stop and backend session end
-            isMicActive={liveKitIsMicActive}      // Pass LiveKit's mic status
-            // This `isConnecting` logic seems a bit complex. It might be simpler to derive it
-            // directly from `isLiveKitConnected` and `liveKitIsMicActive` or add a dedicated
-            // `isConnecting` state in `useLiveKitAudio` if the connection process is asynchronous.
+            onStart={handleStartVoiceInteraction}
+            onStop={handleStopVoiceInteraction}
+            isMicActive={liveKitIsMicActive}
             isConnecting={voiceSession !== null && !isLiveKitConnected && !liveKitIsMicActive}
+            selectedVoice={settings.voice}
+            onVoiceChange={(voice) => updateSettings({ voice: voice as any })}
             demoMode={false}
             className="backdrop-blur-2xl bg-white/[0.02] rounded-2xl border border-white/[0.05] py-8"
           />
@@ -489,7 +499,13 @@ function App() {
                       ? 'bg-white text-black'
                       : 'bg-white/[0.05] text-white/90 border border-white/[0.1]'
                   }`}>
-                    <div className="mb-2">{message.content}</div>
+                    <div className="mb-2">
+                      {settings.markdownEnabled && message.sender === 'ai' ? (
+                        <MarkdownContent content={message.content} />
+                      ) : (
+                        message.content
+                      )}
+                    </div>
                     <div className="text-xs opacity-70 flex items-center gap-2">
                       <span>{message.sender === 'user' ? 'You' : 'AI Philosopher'}</span>
                       <span>•</span>
@@ -597,7 +613,16 @@ function App() {
         </motion.div>
       </div>
 
-      {/* Mouse-following glow effect and Typing indicator overlay remain unchanged */}
+      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+      {settings.showTranscription && transcriptionSegments.length > 0 && (
+        <TranscriptionViewer
+          segments={transcriptionSegments}
+          isCollapsed={transcriptionCollapsed}
+          onToggle={() => setTranscriptionCollapsed(!transcriptionCollapsed)}
+        />
+      )}
+
       <AnimatePresence>
         {inputFocused && (
           <motion.div

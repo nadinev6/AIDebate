@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     # API Keys (Sprint 2+)
     OPENAI_API_KEY: Optional[str] = None
     ASSEMBLYAI_API_KEY: Optional[str] = None
+    CEREBRAS_API_KEY: Optional[str] = None
     
     # LiveKit Configuration (Sprint 3+)
     LIVEKIT_API_KEY: Optional[str] = None
@@ -66,7 +67,19 @@ class Settings(BaseSettings):
     VOICE_SESSION_TIMEOUT: int = 3600  # 1 hour in seconds
     MAX_CONCURRENT_SESSIONS: int = 10
 
-    
+    # Redis Configuration (Sprint 4+)
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_ENABLED: bool = False
+    REDIS_TTL: int = 3600  # 1 hour cache TTL
+
+    # Document Upload Configuration
+    UPLOAD_DIR: str = "backend/uploads"
+    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    ALLOWED_EXTENSIONS: list = [".pdf", ".txt", ".md"]
+
+
     class Config:
         env_file = ".env"
         case_sensitive = True

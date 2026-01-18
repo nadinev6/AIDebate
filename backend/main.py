@@ -70,6 +70,36 @@ active_voice_sessions = {}  # Track active voice sessions
 
 # Performance logging configuration
 PERFORMANCE_LOG_FILE = "backend/performance_logs.jsonl"
+SESSION_HISTORY_FILE = "backend/session_history.jsonl"
+
+def log_session_history(session_id: str, room_name: str, user_identity: str, participant_name: str, created_at: int, expires_at: int, status: str = "active"):
+    """Log session history to filesystem"""
+    try:
+        logger.info(f"log_session_history: status={status}, original_expires_at={expires_at}, current_time={int(time.time())}")
+        # If status is "ended", use current time as the actual end time instead of expires_at
+        if status == "ended":
+            expires_at = int(time.time())
+            logger.info(f"log_session_history: updated expires_at to {expires_at}")
+            
+        log_entry = {
+            "session_id": session_id,
+            "room_name": room_name,
+            "user_identity": user_identity,
+            "participant_name": participant_name,
+            "created_at": created_at,
+            "expires_at": expires_at,
+            "status": status
+        }
+        
+        # Ensure the backend directory exists
+        os.makedirs(os.path.dirname(SESSION_HISTORY_FILE), exist_ok=True)
+        
+        # Append to JSONL file (JSON Lines format for easy parsing)
+        with open(SESSION_HISTORY_FILE, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(log_entry) + '\n')
+            
+    except Exception as e:
+        logger.error(f"Failed to log session history: {str(e)}")
 
 def log_performance_metrics(response_time: float, confidence: float, user_message: str, success: bool = True, error_message: str = None):
     """Log performance metrics to filesystem"""
@@ -607,6 +637,9 @@ async def start_voice_session(request: VoiceSessionRequest):
             "status": "active"
         }
         
+        # Log session to history
+        log_session_history(session_id, room_name, request.user_identity, request.participant_name, current_time, expires_at, "active")
+        
         logger.info(f"Created voice session {session_id} for user {request.user_identity} in room {room_name}")
         
         return VoiceSessionResponse(
@@ -659,6 +692,9 @@ async def end_voice_session(session_id: str):
         session = active_voice_sessions[session_id]
         del active_voice_sessions[session_id]
         
+        # Update session status in history to "ended"
+        log_session_history(session_id, session["room_name"], session["user_identity"], session["participant_name"], session["created_at"], session["expires_at"], "ended")
+        
         logger.info(f"Ended voice session {session_id} in room {session['room_name']}")
         
         return {"message": "Voice session ended successfully", "session_id": session_id}
@@ -694,6 +730,59 @@ async def list_active_sessions():
         
     except Exception as e:
         logger.error(f"Error listing active sessions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/voice/session-history")
+async def get_session_history(limit: int = 50, offset: int = 0):
+    """
+    Get session history (including past sessions)
+    """
+    try:
+        if not os.path.exists(SESSION_HISTORY_FILE):
+            return {
+                "sessions": [],
+                "total_count": 0,
+                "message": "No session history available"
+            }
+        
+        sessions = []
+        with open(SESSION_HISTORY_FILE, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            for line in lines:
+                try:
+                    session = json.loads(line.strip())
+                    sessions.append(session)
+                except json.JSONDecodeError:
+                    continue
+        
+        # Deduplicate sessions - keep only the latest status for each session
+        session_map = {}
+        for session in sessions:
+            if session["session_id"] not in session_map:
+                session_map[session["session_id"]] = session
+            else:
+                # Update with latest status
+                existing = session_map[session["session_id"]]
+                if session["status"] == "ended" and existing["status"] == "active":
+                    session_map[session["session_id"]] = session
+        
+        # Convert to list and sort by created_at (descending)
+        sorted_sessions = sorted(session_map.values(), key=lambda x: x["created_at"], reverse=True)
+        
+        # Apply pagination
+        start_idx = offset
+        end_idx = offset + limit
+        paginated_sessions = sorted_sessions[start_idx:end_idx]
+        
+        return {
+            "sessions": paginated_sessions,
+            "total_count": len(sorted_sessions),
+            "limit": limit,
+            "offset": offset
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting session history: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Performance metrics endpoint

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card } from './card';
-import { Button } from './button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import {
   Settings,
   X,
@@ -29,7 +29,7 @@ interface SettingsPanelProps {
 export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const { settings, updateSettings, saveSettings, resetSettings, hasUnsavedChanges } =
     useSettings();
-  const [activeTab, setActiveTab] = useState<'general' | 'ai' | 'voice' | 'knowledge'>(
+  const [activeTab, setActiveTab] = useState<'general' | 'model' | 'voice' | 'knowledge'>(
     'general'
   );
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -106,403 +106,482 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="max-w-3xl w-full bg-card border-border max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <Settings className="w-6 h-6 text-blue-400" />
-            <h2 className="text-2xl font-bold text-foreground">Settings</h2>
-            {hasUnsavedChanges && (
-              <span className="text-xs bg-yellow-600/20 text-yellow-400 px-2 py-1 rounded">
-                Unsaved changes
-              </span>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+  const tabs = [
+    { id: 'general', label: 'General' },
+    { id: 'model', label: 'Model' },
+    { id: 'voice', label: 'Voice' },
+    { id: 'knowledge', label: 'Knowledge' }
+  ] as const;
 
-        <div className="flex border-b border-border">
-          {(['general', 'ai', 'voice', 'knowledge'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-900/10'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-input/50'
-              }`}
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/50 p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <motion.div
+          className="max-w-3xl w-full backdrop-blur-2xl bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl border border-black/[0.05] dark:border-white/[0.05] shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+        >
+          <div className="flex items-center justify-between p-6 border-b border-black/[0.05] dark:border-white/[0.05]">
+            <div className="flex items-center gap-3">
+              <Settings className="w-6 h-6 text-black/70 dark:text-white/70" />
+              <h2 className="text-2xl font-bold text-black/90 dark:text-white/90">Settings</h2>
+              {hasUnsavedChanges && (
+                <motion.span
+                  className="text-xs bg-yellow-500/20 dark:bg-yellow-600/20 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                >
+                  Unsaved changes
+                </motion.span>
+              )}
+            </div>
+            <motion.button
+              onClick={onClose}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-2 text-black/60 dark:text-white/60 hover:text-black/90 dark:hover:text-white/90 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] rounded-lg transition-colors"
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </div>
+              <X className="w-6 h-6" />
+            </motion.button>
+          </div>
+
+          <div className="flex border-b border-black/[0.05] dark:border-white/[0.05]">
+            {tabs.map((tab) => (
+              <motion.button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                whileTap={{ scale: 0.97 }}
+                className={cn(
+                  "relative flex-1 py-3 px-4 text-sm font-medium transition-all",
+                  activeTab === tab.id
+                    ? 'text-violet-600 dark:text-violet-400'
+                    : 'text-black/60 dark:text-white/60 hover:text-black/90 dark:hover:text-white/90 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]'
+                )}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <motion.div
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-500 to-indigo-500"
+                    layoutId="activeTab"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+              </motion.button>
+            ))}
+          </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'general' && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Theme
-                </label>
-                <select
-                  value={settings.theme}
-                  onChange={(e) =>
-                    updateSettings({ theme: e.target.value as 'light' | 'dark' })
-                  }
-                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="dark">Dark</option>
-                  <option value="light">Light</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between">
+          <AnimatePresence mode="wait">
+            {activeTab === 'general' && (
+              <motion.div
+                className="space-y-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
                 <div>
-                  <label className="block text-sm font-medium text-foreground">
-                    Auto-save Settings
-                  </label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Automatically save changes as you make them
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.autoSave}
-                  onChange={(e) => updateSettings({ autoSave: e.target.checked })}
-                  className="w-5 h-5 rounded bg-input border-border"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-sm font-medium text-foreground">
-                    Enable Markdown Rendering
-                  </label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Render markdown formatting in messages
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.markdownEnabled}
-                  onChange={(e) => updateSettings({ markdownEnabled: e.target.checked })}
-                  className="w-5 h-5 rounded bg-input border-border"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-sm font-medium text-foreground">
-                    Show Citations
-                  </label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Display source citations in responses
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.showCitations}
-                  onChange={(e) => updateSettings({ showCitations: e.target.checked })}
-                  className="w-5 h-5 rounded bg-input border-border"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-sm font-medium text-foreground">
-                    Show Live Transcription
-                  </label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Display real-time transcription during voice chat
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.showTranscription}
-                  onChange={(e) =>
-                    updateSettings({ showTranscription: e.target.checked })
-                  }
-                  className="w-5 h-5 rounded bg-input border-border"
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'ai' && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  AI Provider
-                </label>
-                <select
-                  value={settings.aiProvider}
-                  onChange={(e) =>
-                    updateSettings({
-                      aiProvider: e.target.value as 'openai' | 'cerebras',
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="openai">OpenAI</option>
-                  <option value="cerebras">Cerebras</option>
-                </select>
-              </div>
-
-              {settings.aiProvider === 'openai' && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    OpenAI Model
+                  <label className="block text-sm font-medium text-black/90 dark:text-white/90 mb-2">
+                    Theme
                   </label>
                   <select
-                    value={settings.openaiModel}
-                    onChange={(e) => updateSettings({ openaiModel: e.target.value })}
-                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
+                    value={settings.theme}
+                    onChange={(e) =>
+                      updateSettings({ theme: e.target.value as 'light' | 'dark' })
+                    }
+                    className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-black/[0.05] dark:border-white/[0.05] rounded-lg text-black/90 dark:text-white/90 focus:border-violet-500 dark:focus:border-violet-400 focus:outline-none transition-colors"
                   >
-                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                    <option value="gpt-4">GPT-4</option>
-                    <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                    <option value="dark" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Dark</option>
+                    <option value="light" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Light</option>
                   </select>
                 </div>
-              )}
 
-              {settings.aiProvider === 'cerebras' && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Cerebras Model
-                  </label>
-                  <select
-                    value={settings.cerebrasModel}
-                    onChange={(e) => updateSettings({ cerebrasModel: e.target.value })}
-                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="llama3.1-8b">Llama 3.1 8B</option>
-                    <option value="llama3.1-70b">Llama 3.1 70B</option>
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Temperature: {settings.temperature}
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="2"
-                  step="0.1"
-                  value={settings.temperature}
-                  onChange={(e) =>
-                    updateSettings({ temperature: parseFloat(e.target.value) })
-                  }
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>Focused</span>
-                  <span>Creative</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Max Tokens: {settings.maxTokens}
-                </label>
-                <input
-                  type="range"
-                  min="100"
-                  max="2000"
-                  step="100"
-                  value={settings.maxTokens}
-                  onChange={(e) =>
-                    updateSettings({ maxTokens: parseInt(e.target.value) })
-                  }
-                  className="w-full"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-sm font-medium text-foreground">
-                    Enable Redis Caching
-                  </label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cache AI responses for faster retrieval
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.redisEnabled}
-                  onChange={(e) => updateSettings({ redisEnabled: e.target.checked })}
-                  className="w-5 h-5 rounded bg-input border-border"
-                />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'voice' && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Voice Selection
-                </label>
-                <select
-                  value={settings.voice}
-                  onChange={(e) =>
-                    updateSettings({
-                      voice: e.target.value as typeof settings.voice,
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="alloy">Alloy</option>
-                  <option value="echo">Echo</option>
-                  <option value="fable">Fable</option>
-                  <option value="onyx">Onyx</option>
-                  <option value="nova">Nova</option>
-                  <option value="shimmer">Shimmer</option>
-                </select>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Select the voice for AI responses in voice chat mode
-                </p>
-              </div>
-
-              <div className="p-4 bg-blue-900/20 border border-blue-700/50 rounded-lg">
-                <h4 className="text-sm font-medium text-blue-400 mb-2">
-                  Voice Descriptions
-                </h4>
-                <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>
-                    <strong>Alloy:</strong> Neutral, balanced voice
-                  </li>
-                  <li>
-                    <strong>Echo:</strong> Warm, professional voice
-                  </li>
-                  <li>
-                    <strong>Fable:</strong> Expressive, storytelling voice
-                  </li>
-                  <li>
-                    <strong>Onyx:</strong> Deep, authoritative voice
-                  </li>
-                  <li>
-                    <strong>Nova:</strong> Energetic, engaging voice
-                  </li>
-                  <li>
-                    <strong>Shimmer:</strong> Bright, friendly voice
-                  </li>
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'knowledge' && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Upload Documents
-                </label>
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                <div className="flex items-center justify-between p-4 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors group">
+                  <div>
+                    <label className="block text-sm font-medium text-black/90 dark:text-white/90">
+                      Auto-save Settings
+                    </label>
+                    <p className="text-xs text-black/60 dark:text-white/60 mt-1">
+                      Automatically save changes as you make them
+                    </p>
+                  </div>
                   <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.txt,.md"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                    disabled={uploading}
+                    type="checkbox"
+                    checked={settings.autoSave}
+                    onChange={(e) => updateSettings({ autoSave: e.target.checked })}
+                    className="w-5 h-5 rounded accent-violet-500 cursor-pointer"
                   />
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer flex flex-col items-center"
-                  >
-                    <Upload className="w-10 h-10 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to upload or drag and drop
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      PDF, TXT, or MD (max 10MB)
-                    </p>
-                  </label>
                 </div>
-              </div>
 
-              <div>
-                <h4 className="text-sm font-medium text-foreground mb-3">
-                  Uploaded Documents ({documents.length})
-                </h4>
-                <div className="space-y-2">
-                  {documents.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No documents uploaded yet
+
+
+                <div className="flex items-center justify-between p-4 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors group">
+                  <div>
+                    <label className="block text-sm font-medium text-black/90 dark:text-white/90">
+                      Show Citations
+                    </label>
+                    <p className="text-xs text-black/60 dark:text-white/60 mt-1">
+                      Display source citations in responses
                     </p>
-                  ) : (
-                    documents.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="flex items-center justify-between p-3 bg-input rounded-lg"
-                      >
-                        <div className="flex items-center gap-3 flex-1">
-                          <FileText className="w-5 h-5 text-blue-400" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-foreground truncate">{doc.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(doc.size)} •{' '}
-                              {new Date(doc.uploadedAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {doc.status === 'processing' && (
-                            <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                          )}
-                          {doc.status === 'ready' && (
-                            <span className="text-xs text-green-400">Ready</span>
-                          )}
-                          {doc.status === 'error' && (
-                            <span className="text-xs text-red-400">Error</span>
-                          )}
-                          <button
-                            onClick={() => handleDeleteDocument(doc.id)}
-                            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-red-400 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.showCitations}
+                    onChange={(e) => updateSettings({ showCitations: e.target.checked })}
+                    className="w-5 h-5 rounded accent-violet-500 cursor-pointer"
+                  />
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
 
-        <div className="flex items-center justify-between p-6 border-t border-border">
-          <Button
-            onClick={resetSettings}
-            variant="outline"
-            className="border-border text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset to Defaults
-          </Button>
-          <div className="flex gap-3">
-            <Button onClick={onClose} variant="outline" className="border-border">
-              Close
-            </Button>
-            {!settings.autoSave && hasUnsavedChanges && (
-              <Button onClick={saveSettings} className="bg-blue-600 hover:bg-blue-700">
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </Button>
+                <div className="flex items-center justify-between p-4 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors group">
+                  <div>
+                    <label className="block text-sm font-medium text-black/90 dark:text-white/90">
+                      Show Live Transcription
+                    </label>
+                    <p className="text-xs text-black/60 dark:text-white/60 mt-1">
+                      Display real-time transcription during voice chat
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.showTranscription}
+                    onChange={(e) =>
+                      updateSettings({ showTranscription: e.target.checked })
+                    }
+                    className="w-5 h-5 rounded accent-violet-500 cursor-pointer"
+                  />
+                </div>
+              </motion.div>
             )}
-          </div>
+
+            {activeTab === 'model' && (
+              <motion.div
+                className="space-y-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div>
+                  <label className="block text-sm font-medium text-black/90 dark:text-white/90 mb-2">
+                    Model Provider
+                  </label>
+                  <select
+                    value={settings.aiProvider}
+                    onChange={(e) =>
+                      updateSettings({
+                        aiProvider: e.target.value as 'openai' | 'cerebras',
+                      })
+                    }
+                    className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-black/[0.05] dark:border-white/[0.05] rounded-lg text-black/90 dark:text-white/90 focus:border-violet-500 dark:focus:border-violet-400 focus:outline-none transition-colors"
+                  >
+                    <option value="openai" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">OpenAI</option>
+                    <option value="cerebras" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Cerebras</option>
+                  </select>
+                </div>
+
+                {settings.aiProvider === 'openai' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <label className="block text-sm font-medium text-black/90 dark:text-white/90 mb-2">
+                      OpenAI Model
+                    </label>
+                    <select
+                      value={settings.openaiModel}
+                      onChange={(e) => updateSettings({ openaiModel: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-black/[0.05] dark:border-white/[0.05] rounded-lg text-black/90 dark:text-white/90 focus:border-violet-500 dark:focus:border-violet-400 focus:outline-none transition-colors"
+                    >
+                      <option value="gpt-3.5-turbo" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">GPT-3.5 Turbo</option>
+                      <option value="gpt-4" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">GPT-4</option>
+                      <option value="gpt-4-turbo" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">GPT-4 Turbo</option>
+                    </select>
+                  </motion.div>
+                )}
+
+                {settings.aiProvider === 'cerebras' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <label className="block text-sm font-medium text-black/90 dark:text-white/90 mb-2">
+                      Cerebras Model
+                    </label>
+                    <select
+                      value={settings.cerebrasModel}
+                      onChange={(e) => updateSettings({ cerebrasModel: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-black/[0.05] dark:border-white/[0.05] rounded-lg text-black/90 dark:text-white/90 focus:border-violet-500 dark:focus:border-violet-400 focus:outline-none transition-colors"
+                    >
+                      <option value="llama3.1-8b" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Llama 3.1 8B</option>
+                      <option value="llama3.1-70b" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Llama 3.1 70B</option>
+                    </select>
+                  </motion.div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-black/90 dark:text-white/90 mb-2">
+                    Temperature: {settings.temperature}
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="0.1"
+                    value={settings.temperature}
+                    onChange={(e) =>
+                      updateSettings({ temperature: parseFloat(e.target.value) })
+                    }
+                    className="w-full h-2 bg-black/[0.1] dark:bg-white/[0.1] rounded-lg appearance-none cursor-pointer slider-thumb"
+                    style={{
+                      background: `linear-gradient(to right, rgb(139 92 246) 0%, rgb(139 92 246) ${(settings.temperature / 2) * 100}%, rgb(0 0 0 / 0.1) ${(settings.temperature / 2) * 100}%, rgb(0 0 0 / 0.1) 100%)`
+                    }}
+                  />
+                  <div className="flex justify-between text-xs text-black/60 dark:text-white/60 mt-1">
+                    <span>Focused</span>
+                    <span>Creative</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-black/90 dark:text-white/90 mb-2">
+                    Max Tokens: {settings.maxTokens}
+                  </label>
+                  <input
+                    type="range"
+                    min="100"
+                    max="2000"
+                    step="100"
+                    value={settings.maxTokens}
+                    onChange={(e) =>
+                      updateSettings({ maxTokens: parseInt(e.target.value) })
+                    }
+                    className="w-full h-2 bg-black/[0.1] dark:bg-white/[0.1] rounded-lg appearance-none cursor-pointer slider-thumb"
+                    style={{
+                      background: `linear-gradient(to right, rgb(139 92 246) 0%, rgb(139 92 246) ${((settings.maxTokens - 100) / 1900) * 100}%, rgb(0 0 0 / 0.1) ${((settings.maxTokens - 100) / 1900) * 100}%, rgb(0 0 0 / 0.1) 100%)`
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors group">
+                  <div>
+                    <label className="block text-sm font-medium text-black/90 dark:text-white/90">
+                      Enable Redis Caching
+                    </label>
+                    <p className="text-xs text-black/60 dark:text-white/60 mt-1">
+                      Cache AI responses for faster retrieval
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.redisEnabled}
+                    onChange={(e) => updateSettings({ redisEnabled: e.target.checked })}
+                    className="w-5 h-5 rounded accent-violet-500 cursor-pointer"
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'voice' && (
+              <motion.div
+                className="space-y-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div>
+                  <label className="block text-sm font-medium text-black/90 dark:text-white/90 mb-2">
+                    Voice Selection
+                  </label>
+                  <select
+                    value={settings.voice}
+                    onChange={(e) =>
+                      updateSettings({
+                        voice: e.target.value as typeof settings.voice,
+                      })
+                    }
+                    className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-black/[0.05] dark:border-white/[0.05] rounded-lg text-black/90 dark:text-white/90 focus:border-violet-500 dark:focus:border-violet-400 focus:outline-none transition-colors"
+                  >
+                    <option value="alloy" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Alloy</option>
+                    <option value="echo" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Echo</option>
+                    <option value="fable" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Fable</option>
+                    <option value="onyx" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Onyx</option>
+                    <option value="nova" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Nova</option>
+                    <option value="shimmer" className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">Shimmer</option>
+                  </select>
+                  <p className="text-xs text-black/60 dark:text-white/60 mt-2">
+                    Select the voice for AI responses in voice chat mode
+                  </p>
+                </div>
+
+                <div className="p-4 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] rounded-lg">
+                  <h4 className="text-sm font-medium text-black/90 dark:text-white/90 mb-2">
+                    Voice Descriptions
+                  </h4>
+                  <ul className="text-xs text-black/60 dark:text-white/60 space-y-1">
+                    <li>
+                      <strong className="text-black/80 dark:text-white/80">Alloy:</strong> Neutral, balanced voice
+                    </li>
+                    <li>
+                      <strong className="text-black/80 dark:text-white/80">Echo:</strong> Warm, professional voice
+                    </li>
+                    <li>
+                      <strong className="text-black/80 dark:text-white/80">Fable:</strong> Expressive, storytelling voice
+                    </li>
+                    <li>
+                      <strong className="text-black/80 dark:text-white/80">Onyx:</strong> Deep, authoritative voice
+                    </li>
+                    <li>
+                      <strong className="text-black/80 dark:text-white/80">Nova:</strong> Energetic, engaging voice
+                    </li>
+                    <li>
+                      <strong className="text-black/80 dark:text-white/80">Shimmer:</strong> Bright, friendly voice
+                    </li>
+                  </ul>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'knowledge' && (
+              <motion.div
+                className="space-y-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div>
+                  <label className="block text-sm font-medium text-black/90 dark:text-white/90 mb-2">
+                    Upload Documents
+                  </label>
+                  <div className="border-2 border-dashed border-black/[0.05] dark:border-white/[0.05] rounded-lg p-8 text-center hover:border-violet-500 dark:hover:border-violet-400 transition-colors">
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.txt,.md"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="file-upload"
+                      disabled={uploading}
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className="cursor-pointer flex flex-col items-center"
+                    >
+                      <Upload className="w-10 h-10 text-black/60 dark:text-white/60 mb-2" />
+                      <p className="text-sm text-black/70 dark:text-white/70">
+                        Click to upload or drag and drop
+                      </p>
+                      <p className="text-xs text-black/60 dark:text-white/60 mt-1">
+                        PDF, TXT, or MD (max 10MB)
+                      </p>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-black/90 dark:text-white/90 mb-3">
+                    Uploaded Documents ({documents.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {documents.length === 0 ? (
+                      <p className="text-sm text-black/60 dark:text-white/60 text-center py-4">
+                        No documents uploaded yet
+                      </p>
+                    ) : (
+                      documents.map((doc) => (
+                        <motion.div
+                          key={doc.id}
+                          className="flex items-center justify-between p-3 bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05] rounded-lg hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <FileText className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-black/90 dark:text-white/90 truncate">{doc.name}</p>
+                              <p className="text-xs text-black/60 dark:text-white/60">
+                                {formatFileSize(doc.size)} •{' '}
+                                {new Date(doc.uploadedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {doc.status === 'processing' && (
+                              <Loader2 className="w-4 h-4 text-violet-500 dark:text-violet-400 animate-spin" />
+                            )}
+                            {doc.status === 'ready' && (
+                              <span className="text-xs text-green-600 dark:text-green-400">Ready</span>
+                            )}
+                            {doc.status === 'error' && (
+                              <span className="text-xs text-red-600 dark:text-red-400">Error</span>
+                            )}
+                            <motion.button
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                              className="p-1.5 rounded hover:bg-red-500/10 text-black/60 dark:text-white/60 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </motion.button>
+                          </div>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </Card>
-    </div>
+
+          <div className="flex items-center justify-between p-6 border-t border-black/[0.05] dark:border-white/[0.05]">
+            <motion.button
+              onClick={resetSettings}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 bg-black/[0.1] dark:bg-white/[0.1] border border-black/[0.05] dark:border-white/[0.05] text-black/70 dark:text-white/70 hover:bg-black/[0.15] dark:hover:bg-white/[0.15] hover:text-black/90 dark:hover:text-white/90 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset to Defaults
+            </motion.button>
+            <div className="flex gap-3">
+              <motion.button
+                onClick={() => {
+                  saveSettings();
+                  onClose();
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-black/[0.1] dark:bg-white/[0.1] border border-black/[0.05] dark:border-white/[0.05] text-black/70 dark:text-white/70 hover:bg-black/[0.15] dark:hover:bg-white/[0.15] hover:text-black/90 dark:hover:text-white/90 transition-colors"
+              >
+                Save
+              </motion.button>
+              {!settings.autoSave && hasUnsavedChanges && (
+                <motion.button
+                  onClick={saveSettings}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-lg"
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                >
+                  <Save className="w-4 h-4" />
+                  Save Changes
+                </motion.button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }

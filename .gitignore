@@ -76,6 +76,7 @@ dist/
 *.tmp
 *.temp
 .cache/
+.bolt/
 
 # AI model files
 *.pkl

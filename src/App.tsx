@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Wifi, WifiOff, MessageSquare, Sparkles, Download, Mic, MicOff, Settings } from 'lucide-react';
+import Diamonds from '@/components/Diamonds';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatInput, TypingDots, ActionButton } from '@/components/ui/chat-input';
+import { AssemblyAI } from '@lobehub/icons';
+import { LiveKit } from '@lobehub/icons';
+import { OpenAI } from '@lobehub/icons';
+import { LlamaIndex } from '@lobehub/icons';
 import { AIVoiceInput } from '@/components/ui/ai-voice-input';
 import { SettingsPanel } from '@/components/ui/settings-panel';
 import { TranscriptionViewer, TranscriptionSegment } from '@/components/ui/transcription-viewer';
@@ -33,6 +38,16 @@ interface VoiceSession {
   expires_at: number;
 }
 
+interface SessionHistoryItem {
+  session_id: string;
+  room_name: string;
+  user_identity: string;
+  participant_name: string;
+  created_at: number;
+  expires_at: number;
+  status: string;
+}
+
 function App() {
   const { settings, updateSettings } = useSettings();
 
@@ -61,6 +76,9 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [transcriptionSegments, setTranscriptionSegments] = useState<TranscriptionSegment[]>([]);
   const [transcriptionCollapsed, setTranscriptionCollapsed] = useState(false);
+  const [historyPanelCollapsed, setHistoryPanelCollapsed] = useState(true);
+  const [sessionHistory, setSessionHistory] = useState<SessionHistoryItem[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Refs for DOM access
   const chatHistoryRef = useRef<HTMLDivElement>(null);
@@ -71,7 +89,23 @@ function App() {
   // Check server connection on component mount
   useEffect(() => {
     checkServerConnection();
+    fetchSessionHistory();
   }, []);
+
+  const fetchSessionHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/voice/session-history?limit=50`);
+      if (response.ok) {
+        const data = await response.json();
+        setSessionHistory(data.sessions);
+      }
+    } catch (error) {
+      console.error('Error fetching session history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -363,14 +397,110 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      {/* Settings Button - Far Top Right */}
-      <button
-        onClick={() => setIsSettingsOpen(true)}
-        className="absolute top-4 right-4 p-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.05] transition-colors z-50"
-        title="Settings"
-      >
-        <Settings className="w-5 h-5 text-white/70 dark:text-white/70" />
-      </button>
+      {/* History Panel - Positioned against left side */}
+      <div className={`fixed left-0 top-0 bottom-0 backdrop-blur-2xl bg-white/[0.02] border-r border-white/[0.05] z-20 flex flex-col transition-all duration-300 ${
+        historyPanelCollapsed ? 'w-16' : 'w-64'
+      }`}>
+        {/* Collapse/Expand Toggle */}
+        <div className="p-4 pt-6 flex justify-center">
+          <button
+            onClick={() => setHistoryPanelCollapsed(!historyPanelCollapsed)}
+            className="p-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.05] transition-all duration-300 hover:shadow-[0_0_15px_rgba(201,200,203,0.5)]"
+            title={historyPanelCollapsed ? "Expand History" : "Collapse History"}
+          >
+            <Diamonds size="16" />
+          </button>
+        </div>
+
+        {/* Expanded History Panel Content */}
+        {!historyPanelCollapsed && (
+          <div className="flex-1 p-4 overflow-y-auto">
+            <h3 className="text-sm font-medium text-white/70 mb-4">Session History</h3>
+            
+            {loadingHistory ? (
+              <div className="text-xs text-white/50">Loading session history...</div>
+            ) : sessionHistory.length === 0 ? (
+              <div className="text-xs text-white/50">No session history available</div>
+            ) : (
+              <div className="space-y-2">
+                {/* Show active session at top */}
+                {voiceSession && (
+                  <div className="p-3 backdrop-blur-xl bg-white/[0.03] rounded-lg border border-white/[0.05]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <LiveKit className="w-4 h-4 text-violet-400" />
+                      <span className="text-xs font-medium text-white/90">LiveKit Session</span>
+                      <span className="px-1 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">Active</span>
+                    </div>
+                    <div className="text-xs text-white/50">
+                      <p>Room: {voiceSession.room_name}</p>
+                      <p>Started: {new Date(voiceSession.expires_at * 1000).toLocaleTimeString()}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Show past sessions */}
+                {sessionHistory.filter(session => session.status === "ended").map((session) => (
+                  <div key={session.session_id} className="p-3 backdrop-blur-xl bg-white/[0.03] rounded-lg border border-white/[0.05]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <LiveKit className="w-4 h-4 text-violet-400" />
+                      <span className="text-xs font-medium text-white/90">LiveKit Session</span>
+                      <span className="px-1 py-0.5 bg-gray-500/20 text-gray-400 text-xs rounded-full">Ended</span>
+                    </div>
+                    <div className="text-xs text-white/50">
+                      <p>Room: {session.room_name}</p>
+                      <p>Started: {new Date(session.created_at * 1000).toLocaleString()}</p>
+                      <p>Duration: {(() => {
+                          const seconds = session.expires_at - session.created_at;
+                          if (seconds < 60) {
+                            return `${seconds} sec`;
+                          }
+                          const minutes = Math.floor(seconds / 60);
+                          const remainingSeconds = seconds % 60;
+                          if (remainingSeconds === 0) {
+                            return `${minutes} min`;
+                          }
+                          return `${minutes} min ${remainingSeconds} sec`;
+                        })()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Export Transcript Button - Centered */}
+            <div className="mt-6 flex justify-center">
+              <ActionButton
+                icon={<Download className="w-4 h-4" />}
+                label="Export Transcript"
+                onClick={exportTranscript}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Collapsed Header with Icons */}
+        {historyPanelCollapsed && (
+          <div className="flex-1 flex flex-col items-center justify-between p-4">
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.05] transition-colors"
+                title="Settings"
+              >
+                <Settings className="w-4 h-4 text-white/70" />
+              </button>
+            </div>
+            
+            {/* LobeHub Icons at Bottom */}
+            <div className="flex flex-col items-center gap-2">
+              <OpenAI size={20} className="text-white/70" />
+              <AssemblyAI size={20} className="text-white/70" />
+              <LiveKit size={20} className="text-white/70" />
+            </div>
+          </div>
+        )}
+      </div>
+
 
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse" />
@@ -412,24 +542,17 @@ function App() {
           </motion.p>
         </motion.div>
 
-        {/* Connection Status */}
-        <motion.div
-          className="mb-6 backdrop-blur-2xl bg-white/[0.02] rounded-lg border border-white/[0.05] p-4"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="flex items-center gap-3">
-            {isConnected && isLiveKitConnected ? ( // Consider overall connectivity
-              <Wifi className="w-5 h-5 text-violet-400" />
-            ) : (
-              <WifiOff className="w-5 h-5 text-red-400" />
-            )}
-            <span className={`font-medium ${isConnected && isLiveKitConnected ? 'text-violet-400' : 'text-red-400'}`}>
-              {connectionStatus} {isLiveKitConnected ? ' & LiveKit Connected' : ' & LiveKit Disconnected'}
-            </span>
-          </div>
-        </motion.div>
+        {/* Temporary Settings Button for Testing */}
+        <div className="text-center mb-4">
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="px-6 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+          >
+            Open Settings (Temporary)
+          </button>
+        </div>
+
+
 
         {/* Voice Input Section */}
         <motion.div
@@ -476,18 +599,27 @@ function App() {
               messages.map((message) => (
                 <motion.div
                   key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} items-start gap-3`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
+                  {message.sender === 'ai' && (
+                    <div className="mt-1">
+                      {settings.aiProvider === 'cerebras' ? (
+                        <LlamaIndex.Avatar size={32} />
+                      ) : (
+                        <OpenAI.Avatar size={32} />
+                      )}
+                    </div>
+                  )}
                   <div className={`max-w-[80%] rounded-2xl p-4 ${
                     message.sender === 'user'
                       ? 'bg-white text-black'
                       : 'bg-white/[0.05] text-white/90 border border-white/[0.1]'
                   }`}>
                     <div className="mb-2">
-                      {settings.markdownEnabled && message.sender === 'ai' ? (
+                      {message.sender === 'ai' ? (
                         <MarkdownContent content={message.content} />
                       ) : (
                         message.content
@@ -504,7 +636,7 @@ function App() {
                         </>
                       )}
                     </div>
-                    {message.sender === 'ai' && message.metadata?.sources && message.metadata.sources.length > 0 && (
+                    {message.sender === 'ai' && settings.showCitations && message.metadata?.sources && message.metadata.sources.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-white/[0.1]">
                         <details className="text-sm">
                           <summary className="cursor-pointer text-violet-400 font-medium hover:text-violet-300">
@@ -589,15 +721,7 @@ function App() {
           ))}
         </div>
 
-        {/* Footer */}
-        <motion.div
-          className="text-center text-sm text-white/40"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          <p>Powered by AssemblyAI, OpenAI, and LiveKit | Built for AssemblyAI Hackathon</p>
-        </motion.div>
+
       </div>
 
       <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />

@@ -9,7 +9,6 @@ export interface AppSettings {
   maxTokens: number;
   voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
   autoSave: boolean;
-  markdownEnabled: boolean;
   showCitations: boolean;
   showTranscription: boolean;
   redisEnabled: boolean;
@@ -24,7 +23,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   maxTokens: 500,
   voice: 'alloy',
   autoSave: true,
-  markdownEnabled: true,
   showCitations: true,
   showTranscription: true,
   redisEnabled: false,

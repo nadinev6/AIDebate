@@ -108,11 +108,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="max-w-3xl w-full bg-gray-900 border-gray-700 max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+      <Card className="max-w-3xl w-full bg-card border-border max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <Settings className="w-6 h-6 text-blue-400" />
-            <h2 className="text-2xl font-bold text-white">Settings</h2>
+            <h2 className="text-2xl font-bold text-foreground">Settings</h2>
             {hasUnsavedChanges && (
               <span className="text-xs bg-yellow-600/20 text-yellow-400 px-2 py-1 rounded">
                 Unsaved changes
@@ -121,13 +121,13 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="flex border-b border-gray-700">
+        <div className="flex border-b border-border">
           {(['general', 'ai', 'voice', 'knowledge'] as const).map((tab) => (
             <button
               key={tab}
@@ -135,7 +135,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
                 activeTab === tab
                   ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-900/10'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-input/50'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -147,7 +147,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           {activeTab === 'general' && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Theme
                 </label>
                 <select
@@ -155,7 +155,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   onChange={(e) =>
                     updateSettings({ theme: e.target.value as 'light' | 'dark' })
                   }
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
                 >
                   <option value="dark">Dark</option>
                   <option value="light">Light</option>
@@ -164,10 +164,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">
+                  <label className="block text-sm font-medium text-foreground">
                     Auto-save Settings
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Automatically save changes as you make them
                   </p>
                 </div>
@@ -175,16 +175,16 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   type="checkbox"
                   checked={settings.autoSave}
                   onChange={(e) => updateSettings({ autoSave: e.target.checked })}
-                  className="w-5 h-5 rounded bg-gray-800 border-gray-700"
+                  className="w-5 h-5 rounded bg-input border-border"
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">
+                  <label className="block text-sm font-medium text-foreground">
                     Enable Markdown Rendering
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Render markdown formatting in messages
                   </p>
                 </div>
@@ -192,16 +192,16 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   type="checkbox"
                   checked={settings.markdownEnabled}
                   onChange={(e) => updateSettings({ markdownEnabled: e.target.checked })}
-                  className="w-5 h-5 rounded bg-gray-800 border-gray-700"
+                  className="w-5 h-5 rounded bg-input border-border"
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">
+                  <label className="block text-sm font-medium text-foreground">
                     Show Citations
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Display source citations in responses
                   </p>
                 </div>
@@ -209,16 +209,16 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   type="checkbox"
                   checked={settings.showCitations}
                   onChange={(e) => updateSettings({ showCitations: e.target.checked })}
-                  className="w-5 h-5 rounded bg-gray-800 border-gray-700"
+                  className="w-5 h-5 rounded bg-input border-border"
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">
+                  <label className="block text-sm font-medium text-foreground">
                     Show Live Transcription
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Display real-time transcription during voice chat
                   </p>
                 </div>
@@ -228,7 +228,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   onChange={(e) =>
                     updateSettings({ showTranscription: e.target.checked })
                   }
-                  className="w-5 h-5 rounded bg-gray-800 border-gray-700"
+                  className="w-5 h-5 rounded bg-input border-border"
                 />
               </div>
             </div>
@@ -237,7 +237,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           {activeTab === 'ai' && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   AI Provider
                 </label>
                 <select
@@ -247,7 +247,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                       aiProvider: e.target.value as 'openai' | 'cerebras',
                     })
                   }
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
                 >
                   <option value="openai">OpenAI</option>
                   <option value="cerebras">Cerebras</option>
@@ -256,13 +256,13 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
               {settings.aiProvider === 'openai' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     OpenAI Model
                   </label>
                   <select
                     value={settings.openaiModel}
                     onChange={(e) => updateSettings({ openaiModel: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
                   >
                     <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                     <option value="gpt-4">GPT-4</option>
@@ -273,13 +273,13 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
               {settings.aiProvider === 'cerebras' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Cerebras Model
                   </label>
                   <select
                     value={settings.cerebrasModel}
                     onChange={(e) => updateSettings({ cerebrasModel: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
                   >
                     <option value="llama3.1-8b">Llama 3.1 8B</option>
                     <option value="llama3.1-70b">Llama 3.1 70B</option>
@@ -288,7 +288,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Temperature: {settings.temperature}
                 </label>
                 <input
@@ -302,14 +302,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   }
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>Focused</span>
                   <span>Creative</span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Max Tokens: {settings.maxTokens}
                 </label>
                 <input
@@ -327,10 +327,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">
+                  <label className="block text-sm font-medium text-foreground">
                     Enable Redis Caching
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Cache AI responses for faster retrieval
                   </p>
                 </div>
@@ -338,7 +338,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   type="checkbox"
                   checked={settings.redisEnabled}
                   onChange={(e) => updateSettings({ redisEnabled: e.target.checked })}
-                  className="w-5 h-5 rounded bg-gray-800 border-gray-700"
+                  className="w-5 h-5 rounded bg-input border-border"
                 />
               </div>
             </div>
@@ -347,7 +347,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           {activeTab === 'voice' && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Voice Selection
                 </label>
                 <select
@@ -357,7 +357,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                       voice: e.target.value as typeof settings.voice,
                     })
                   }
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:border-blue-500 focus:outline-none"
                 >
                   <option value="alloy">Alloy</option>
                   <option value="echo">Echo</option>
@@ -366,7 +366,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   <option value="nova">Nova</option>
                   <option value="shimmer">Shimmer</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Select the voice for AI responses in voice chat mode
                 </p>
               </div>
@@ -375,7 +375,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 <h4 className="text-sm font-medium text-blue-400 mb-2">
                   Voice Descriptions
                 </h4>
-                <ul className="text-xs text-gray-400 space-y-1">
+                <ul className="text-xs text-muted-foreground space-y-1">
                   <li>
                     <strong>Alloy:</strong> Neutral, balanced voice
                   </li>
@@ -402,10 +402,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           {activeTab === 'knowledge' && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Upload Documents
                 </label>
-                <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
                   <input
                     type="file"
                     multiple
@@ -419,11 +419,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                     htmlFor="file-upload"
                     className="cursor-pointer flex flex-col items-center"
                   >
-                    <Upload className="w-10 h-10 text-gray-500 mb-2" />
-                    <p className="text-sm text-gray-400">
+                    <Upload className="w-10 h-10 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
                       Click to upload or drag and drop
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       PDF, TXT, or MD (max 10MB)
                     </p>
                   </label>
@@ -431,25 +431,25 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               </div>
 
               <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-3">
+                <h4 className="text-sm font-medium text-foreground mb-3">
                   Uploaded Documents ({documents.length})
                 </h4>
                 <div className="space-y-2">
                   {documents.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">
+                    <p className="text-sm text-muted-foreground text-center py-4">
                       No documents uploaded yet
                     </p>
                   ) : (
                     documents.map((doc) => (
                       <div
                         key={doc.id}
-                        className="flex items-center justify-between p-3 bg-gray-800 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-input rounded-lg"
                       >
                         <div className="flex items-center gap-3 flex-1">
                           <FileText className="w-5 h-5 text-blue-400" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white truncate">{doc.name}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-sm text-foreground truncate">{doc.name}</p>
+                            <p className="text-xs text-muted-foreground">
                               {formatFileSize(doc.size)} •{' '}
                               {new Date(doc.uploadedAt).toLocaleDateString()}
                             </p>
@@ -467,7 +467,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                           )}
                           <button
                             onClick={() => handleDeleteDocument(doc.id)}
-                            className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-red-400 transition-colors"
+                            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-red-400 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -481,17 +481,17 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           )}
         </div>
 
-        <div className="flex items-center justify-between p-6 border-t border-gray-700">
+        <div className="flex items-center justify-between p-6 border-t border-border">
           <Button
             onClick={resetSettings}
             variant="outline"
-            className="border-gray-600 text-gray-400 hover:text-white"
+            className="border-border text-muted-foreground hover:text-foreground"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Reset to Defaults
           </Button>
           <div className="flex gap-3">
-            <Button onClick={onClose} variant="outline" className="border-gray-600">
+            <Button onClick={onClose} variant="outline" className="border-border">
               Close
             </Button>
             {!settings.autoSave && hasUnsavedChanges && (

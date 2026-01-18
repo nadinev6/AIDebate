@@ -6,7 +6,7 @@ Handles interactions with Cerebras inference API
 import requests
 import logging
 from typing import List, Dict, Any, Optional
-from backend.config import settings
+from config import settings
 
 logger = logging.getLogger(__name__)
 

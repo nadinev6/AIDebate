@@ -7,7 +7,7 @@ import json
 import hashlib
 import logging
 from typing import Optional, Any
-from backend.config import settings
+from config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -1,17 +1,17 @@
-# AI Debate 
-
-*Your Real-Time AI Opponent for Philosophical Arguments*
-
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.68.0%2B-green)
 ![LiveKit](https://img.shields.io/badge/LiveKit-1.0%2B-orange)
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--3.5%2B-yellow)
-![AssemblyAI](https://img.shields.io/badge/AssemblyAI-Speech--to--Text-red)
+![AssemblyAI](https://img.shields.io/badge/AssemblyAI-Speech--to--Text-darkblue)
 
-**Optional Features:**
-![Cerebras AI](https://img.shields.io/badge/Cerebras%20AI-Fast%20Inference-purple)
-![Redis](https://img.shields.io/badge/Redis-Caching-lightgrey)
+🔥
+![Cerebras AI](https://img.shields.io/badge/Cerebras%20AI-Fast%20Inference-orange)
+![Redis](https://img.shields.io/badge/Redis-Caching-red)
+
+# AI Debate 
+
+*Your Real-Time AI Opponent for Philosophical Arguments*
 
 AI Debate is a real-time, browser-based platform where you can argue your ideas and the AI will push back with sharp, curated philosophical counter-arguments. Powered by a structured knowledge base and Retrieval-Augmented Generation (RAG).
 

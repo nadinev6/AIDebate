@@ -40,24 +40,24 @@ export function AIVoiceInput({
 
   // Timer management based on isMicActive prop
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let intervalId: number;
 
     if (isMicActive) {
-      intervalId = setInterval(() => {
+      intervalId = window.setInterval(() => {
         setTime((t) => t + 1);
       }, 1000);
     } else {
       setTime(0);
     }
 
-    return () => clearInterval(intervalId);
+    return () => window.clearInterval(intervalId);
   }, [isMicActive]);
 
   // This demo mode logic is fine for its intended purpose.
   useEffect(() => {
     if (!isDemo) return;
 
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: number;
     const runAnimation = () => {
       // Demo mode doesn't need to trigger actual start/stop
       timeoutId = setTimeout(() => {
@@ -103,22 +103,6 @@ export function AIVoiceInput({
   return (
     <div className={cn("w-full py-4", className)}>
       <div className="relative max-w-xl w-full mx-auto flex items-center flex-col gap-2">
-        {onVoiceChange && (
-          <div className="mb-2 w-full max-w-xs">
-            <select
-              value={selectedVoice}
-              onChange={(e) => onVoiceChange(e.target.value)}
-              disabled={isMicActive || isConnecting}
-              className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {voices.map((voice) => (
-                <option key={voice.value} value={voice.value}>
-                  {voice.label} - {voice.desc}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
         <button
           className={cn(
             "group w-16 h-16 rounded-xl flex items-center justify-center transition-colors",

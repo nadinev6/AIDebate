@@ -34,9 +34,9 @@ from livekit.plugins import (
 )
 
 from config import settings
-from backend.document_processor import document_processor
-from backend.cerebras_client import cerebras_client
-from backend.redis_cache import redis_cache
+from document_processor import document_processor
+from cerebras_client import cerebras_client
+from redis_cache import redis_cache
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -293,26 +293,50 @@ async def debate_with_rag(message: DebateMessage):
         logger.info(f"Received debate message: {message.content[:100]}...")
         
         if not rag_chain:
-            # Fallback response if RAG is not available
-            logger.warning("RAG not available, using fallback response")
+            # Fallback to Cerebras if RAG is not available
+            logger.warning("RAG not available, using Cerebras fallback")
             response_time = time.time() - start_time
-            response_confidence = 0.3
             
-            # Log performance metrics for fallback
-            log_performance_metrics(
-                response_time=response_time,
-                confidence=response_confidence,
-                user_message=message.content,
-                success=False,
-                error_message="RAG not available"
-            )
-            
-            response = DebateResponse(
-                response="I understand your point, but I need my philosophical knowledge base to provide a proper counter-argument. Please ensure the system is properly configured with OpenAI API key and knowledge base.",
-                confidence=response_confidence,
-                sources=["system_fallback"]
-            )
-            return response
+            try:
+                cerebras_response = cerebras_client.generate_debate_response(
+                    user_argument=message.content,
+                    context=""
+                )
+                response_confidence = 0.7
+                
+                log_performance_metrics(
+                    response_time=response_time,
+                    confidence=response_confidence,
+                    user_message=message.content,
+                    success=True,
+                    error_message="RAG not available, used Cerebras fallback"
+                )
+                
+                response = DebateResponse(
+                    response=cerebras_response,
+                    confidence=response_confidence,
+                    sources=["cerebras_fallback"]
+                )
+                return response
+                
+            except Exception as e:
+                logger.error(f"Cerebras fallback failed: {str(e)}")
+                response_confidence = 0.3
+                
+                log_performance_metrics(
+                    response_time=response_time,
+                    confidence=response_confidence,
+                    user_message=message.content,
+                    success=False,
+                    error_message=f"Both RAG and Cerebras failed: {str(e)}"
+                )
+                
+                response = DebateResponse(
+                    response="I apologize, but I'm unable to process your argument at this time. Please check the system configuration.",
+                    confidence=response_confidence,
+                    sources=["system_fallback"]
+                )
+                return response
         
         # Use RAG chain to generate response
         logger.info("Generating RAG response...")

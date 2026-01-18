@@ -363,12 +363,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      {/* Theme Toggle */}
-      <button 
-        onClick={() => setDarkMode(!darkMode)}
-        className="p-2 bg-primary text-primary-foreground rounded"
+      {/* Settings Button - Far Top Right */}
+      <button
+        onClick={() => setIsSettingsOpen(true)}
+        className="absolute top-4 right-4 p-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.05] transition-colors z-50"
+        title="Settings"
       >
-        {darkMode ? '☀︎' : '☾'} 
+        <Settings className="w-5 h-5 text-white/70 dark:text-white/70" />
       </button>
 
       <div className="absolute inset-0 w-full h-full overflow-hidden">
@@ -385,13 +386,6 @@ function App() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="absolute top-0 right-0 p-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.05] transition-colors"
-            title="Settings"
-          >
-            <Settings className="w-5 h-5 text-white/70" />
-          </button>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -475,15 +469,8 @@ function App() {
             className="h-96 overflow-y-auto space-y-4 p-6 rounded-2xl backdrop-blur-2xl bg-white/[0.02] border border-white/[0.05]"
           >
             {messages.length === 0 ? (
-              <div className="text-center py-12 space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-full bg-violet-500/10 flex items-center justify-center">
-                  <MessageSquare className="w-8 h-8 text-violet-400" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-white/90 mb-2">Ready for Philosophical Debate</h3>
-                  <p className="text-white/60 mb-1">Present your argument, and I'll challenge it with reasoned counter-arguments.</p>
-                  <p className="text-sm text-violet-400 font-medium">Voice and text input available</p>
-                </div>
+              <div className="text-center py-12">
+                <p className="text-white/60 dark:text-white/60">No messages yet. Start a debate by typing or using voice input.</p>
               </div>
             ) : (
               messages.map((message) => (

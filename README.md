@@ -106,7 +106,7 @@ graph LR
     style B fill:#243fff,color:#fff
 ```
 
-## <img src="/src/components/llamaindex-color.png" alt="Llama Logo" height="32px"> Model Orchestration
+֎ Model Orchestration
 
 To balance intellectual depth with real-time performance, the system utilizes a dynamic routing strategy:
 
@@ -319,7 +319,7 @@ python -m pytest tests/ -v
    - Speak to the AI
    - See real-time transcription appear
    - Test pause/resume auto-scroll
-```
+
 
 ## 📝 License
 
